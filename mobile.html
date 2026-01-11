@@ -2,139 +2,115 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pro Chat PC V15 - Ultimate</title>
-    <script>if (/Android|iPhone|iPad/i.test(navigator.userAgent)) window.location.href = "mobile.html";</script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Pro Chat Mobile - V16</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .mirror { transform: scaleX(-1); }
-        .pointer-dot { position: absolute; width: 20px; height: 20px; background: red; border: 2px solid white; border-radius: 50%; pointer-events: none; z-index: 1000; transform: translate(-50%, -50%); animation: pulse 1s infinite; }
-        @keyframes pulse { 0% { scale: 1; opacity: 1; } 100% { scale: 2; opacity: 0; } }
-        video { background: #000; border-radius: 1.5rem; width: 100%; aspect-ratio: 16/9; object-fit: cover; border: 2px solid #27272a; }
+        .pointer-dot { position: absolute; width: 30px; height: 30px; background: red; border: 3px solid white; border-radius: 50%; pointer-events: none; z-index: 1000; transform: translate(-50%, -50%); animation: pulse 1s infinite; }
+        @keyframes pulse { 0% { scale: 1; opacity: 1; } 100% { scale: 1.5; opacity: 0; } }
+        video { background: #18181b; border-radius: 1rem; width: 100%; height: 100%; object-fit: cover; }
     </style>
 </head>
-<body class="bg-zinc-950 text-white h-screen flex overflow-hidden">
+<body class="bg-zinc-950 text-white h-screen flex flex-col overflow-hidden">
 
-    <div id="auth-screen" class="fixed inset-0 z-[100] bg-zinc-950 flex items-center justify-center">
-        <div class="bg-zinc-900 p-10 rounded-[2.5rem] border border-zinc-800 text-center w-96 shadow-2xl">
-            <h1 class="text-4xl font-black mb-8 text-indigo-500 italic uppercase">PRO CHAT</h1>
-            <input id="auth-email" class="w-full p-4 mb-3 bg-zinc-800 rounded-2xl outline-none" placeholder="E-posta">
-            <input id="auth-password" type="password" class="w-full p-4 mb-8 bg-zinc-800 rounded-2xl outline-none" placeholder="Şifre">
-            <button onclick="handleAuth('login')" class="w-full bg-indigo-600 py-4 rounded-2xl font-bold mb-3">Giriş Yap</button>
-            <button onclick="handleAuth('signup')" class="w-full bg-zinc-800 py-4 rounded-2xl font-bold text-zinc-400">Hesap Oluştur</button>
+    <div id="auth-screen" class="fixed inset-0 z-[100] bg-zinc-950 flex flex-col items-center justify-center p-6 text-center">
+        <h1 class="text-4xl font-black text-indigo-500 mb-8 italic uppercase">MOBILE</h1>
+        <input id="auth-email" class="w-full p-4 mb-2 bg-zinc-900 rounded-2xl outline-none" placeholder="E-posta">
+        <input id="auth-password" type="password" class="w-full p-4 mb-8 bg-zinc-900 rounded-2xl outline-none" placeholder="Şifre">
+        <button onclick="handleAuth('login')" class="w-full bg-indigo-600 py-4 rounded-2xl font-bold mb-4">GİRİŞ YAP</button>
+        <button onclick="handleAuth('signup')" class="w-full text-zinc-500 font-bold uppercase text-xs">Kayıt Ol</button>
+    </div>
+
+    <header class="h-16 border-b border-zinc-800 flex items-center justify-between px-4">
+        <button onclick="drawer.classList.toggle('-translate-x-full')" class="text-2xl">☰</button>
+        <span id="title" class="font-bold text-xs uppercase text-zinc-400 tracking-widest"># Kanal Seç</span>
+        <button id="call-btn" onclick="startCall()" class="hidden bg-green-600 p-2.5 rounded-xl">📞</button>
+    </header>
+
+    <main id="messages" class="flex-1 overflow-y-auto p-4 space-y-4"></main>
+
+    <form id="chat-form" class="hidden p-4 bg-zinc-900 border-t border-zinc-800 flex gap-2 pb-6">
+        <input id="msg-input" class="flex-1 bg-zinc-800 px-4 py-2 rounded-full outline-none" placeholder="Mesaj...">
+        <button class="bg-indigo-600 w-10 h-10 rounded-full flex items-center justify-center">🚀</button>
+    </form>
+
+    <div id="drawer" class="fixed inset-y-0 left-0 w-72 bg-zinc-900 z-[150] -translate-x-full transition-transform p-6 border-r border-zinc-800">
+        <h2 class="font-black text-indigo-500 mb-6 italic uppercase">KANALLAR</h2>
+        <div id="channel-list" class="space-y-2 mb-6 overflow-y-auto max-h-[60%]"></div>
+        <div class="pt-6 border-t border-zinc-800">
+            <input id="new-ch-name" class="w-full p-3 bg-zinc-800 rounded-xl mb-2 text-xs outline-none" placeholder="Grup Adı...">
+            <button onclick="createChannel()" class="w-full bg-indigo-600 py-3 rounded-xl text-[10px] font-bold">YENİ GRUP OLUŞTUR</button>
+        </div>
+        <button onclick="logout()" class="absolute bottom-8 left-6 text-red-500 font-bold text-xs">ÇIKIŞ YAP</button>
+    </div>
+
+    <div id="call-panel" class="hidden fixed inset-0 z-[200] bg-black flex flex-col">
+        <div class="flex-1 relative">
+            <video id="remoteVideo" autoplay playsinline class="w-full h-full"></video>
+            <div id="remote-pointer" class="pointer-dot hidden"></div>
+            <video id="localVideo" autoplay muted playsinline class="absolute top-4 right-4 w-28 h-40 mirror border-2 border-indigo-500 rounded-2xl"></video>
+        </div>
+        <div class="p-8 bg-zinc-900 flex justify-center">
+            <button onclick="endCall()" class="w-20 h-20 bg-red-600 rounded-full text-2xl shadow-xl flex items-center justify-center">📞</button>
         </div>
     </div>
 
-    <aside class="w-72 bg-zinc-900 border-r border-zinc-800 flex flex-col">
-        <div class="p-8 font-black text-2xl text-indigo-500 italic border-b border-zinc-800">DISCORD</div>
-        <div id="channel-list" class="flex-1 p-4 overflow-y-auto"></div>
-        <div class="p-4 bg-zinc-950/50">
-            <input id="new-ch-name" class="w-full p-3 bg-zinc-800 rounded-xl mb-2 text-xs outline-none border border-zinc-700" placeholder="Grup Adı...">
-            <button onclick="createChannel()" class="w-full bg-indigo-600 py-2 rounded-xl text-[10px] font-black">GRUP OLUŞTUR</button>
-        </div>
-        <button id="admin-btn" onclick="openAdmin()" class="hidden m-4 p-3 bg-amber-600 rounded-xl font-black text-[10px]">ADMİN PANELİ</button>
-        <button onclick="logout()" class="p-4 text-xs text-zinc-600 font-bold border-t border-zinc-800">ÇIKIŞ YAP</button>
-    </aside>
-
-    <main class="flex-1 flex flex-col relative">
-        <div id="call-panel" class="hidden bg-zinc-900 p-6 border-b border-zinc-800">
-            <div class="grid grid-cols-2 gap-4 max-w-4xl mx-auto relative" id="video-container">
-                <div class="relative"><video id="localVideo" autoplay muted playsinline class="mirror border-indigo-500"></video></div>
-                <div class="relative"><video id="remoteVideo" autoplay playsinline></video><div id="remote-pointer" class="pointer-dot hidden"></div></div>
-            </div>
-            <div class="flex justify-center gap-4 mt-4">
-                <button onclick="togglePointer()" id="ptr-btn" class="hidden bg-amber-600 px-6 py-2 rounded-full font-bold text-xs uppercase">📍 İşaretle</button>
-                <button onclick="endCall()" class="bg-red-600 px-8 py-2 rounded-full font-bold">KAPAT</button>
-            </div>
-        </div>
-
-        <header class="h-20 flex items-center justify-between px-8 border-b border-zinc-900">
-            <span id="h-text" class="font-bold text-zinc-400"># KANAL SEÇİN</span>
-            <button id="call-btn" onclick="startCall()" class="hidden bg-green-600 px-6 py-2 rounded-xl font-bold text-xs uppercase">Aramaya Katıl</button>
-        </header>
-
-        <div id="messages" class="flex-1 p-8 overflow-y-auto space-y-4"></div>
-
-        <form id="chat-form" class="hidden p-6 bg-zinc-900 border-t border-zinc-800 flex gap-4">
-            <input id="msg-input" class="flex-1 bg-zinc-800 p-4 rounded-2xl outline-none" placeholder="Mesaj yaz...">
-            <button class="bg-indigo-600 px-8 rounded-2xl font-bold">GÖNDER</button>
-        </form>
-    </main>
-
     <script>
-        let _supabase, user, activeCh, pc, localStream, pointerEnabled = false;
-
+        let _supabase, user, activeCh, pc, localStream;
         window.onload = () => {
             _supabase = supabase.createClient("https://zdixrufuczabxhvsvwsd.supabase.co", "sb_publishable_cQH31e8TGNu-KuWRIr6_xA_r5yA1eV8");
             checkUser();
         };
-
         async function handleAuth(type) {
             const email = document.getElementById('auth-email').value;
             const password = document.getElementById('auth-password').value;
             const { error } = type === 'login' ? await _supabase.auth.signInWithPassword({email, password}) : await _supabase.auth.signUp({email, password});
             if (error) alert(error.message); else checkUser();
         }
-
         async function checkUser() {
             const { data: { session } } = await _supabase.auth.getSession();
-            if (session) {
-                user = session.user;
-                document.getElementById('auth-screen').classList.add('hidden');
-                if (user.email === 'test@test.com') {
-                    document.getElementById('admin-btn').classList.remove('hidden');
-                    document.getElementById('ptr-btn').classList.remove('hidden');
-                }
-                loadChannels();
-            }
+            if (session) { user = session.user; document.getElementById('auth-screen').classList.add('hidden'); loadChannels(); }
         }
-
         async function loadChannels() {
             const { data } = await _supabase.from('channels').select('*');
-            const list = document.getElementById('channel-list');
-            list.innerHTML = '';
+            const list = document.getElementById('channel-list'); list.innerHTML = '';
             data?.forEach(ch => {
                 const b = document.createElement('button');
-                b.className = "w-full text-left p-4 rounded-xl hover:bg-zinc-800 text-sm font-bold uppercase mb-1";
+                b.className = "w-full text-left p-4 bg-zinc-800 rounded-2xl font-bold uppercase text-[10px]";
                 b.innerText = "# " + ch.name;
                 b.onclick = () => selectChannel(ch);
                 list.appendChild(b);
             });
         }
-
         async function createChannel() {
             const name = document.getElementById('new-ch-name').value;
             if (!name) return;
             await _supabase.from('channels').insert([{ name, creator_id: user.id }]);
-            document.getElementById('new-ch-name').value = '';
-            loadChannels();
+            document.getElementById('new-ch-name').value = ''; loadChannels();
         }
-
         async function selectChannel(ch) {
             activeCh = ch.id;
-            document.getElementById('h-text').innerText = "# " + ch.name.toUpperCase();
+            document.getElementById('title').innerText = "# " + ch.name.toUpperCase();
             document.getElementById('call-btn').classList.remove('hidden');
             document.getElementById('chat-form').classList.remove('hidden');
-            loadMessages();
-            setupRealtime();
+            document.getElementById('drawer').classList.add('-translate-x-full');
+            loadMessages(); setupRealtime();
         }
-
         async function loadMessages() {
             const { data } = await _supabase.from('messages').select('*').eq('channel_id', activeCh).order('created_at');
             const box = document.getElementById('messages'); box.innerHTML = '';
             data?.forEach(addMsg); box.scrollTop = box.scrollHeight;
         }
-
         function addMsg(m) {
             const box = document.getElementById('messages');
             const isMe = m.user_id === user.id;
             const d = document.createElement('div');
-            d.className = `p-4 rounded-2xl max-w-md ${isMe ? 'bg-indigo-600 ml-auto' : 'bg-zinc-900 border border-zinc-800'}`;
-            d.innerHTML = `<p class="text-[9px] opacity-40 uppercase font-black">${m.username}</p><p class="text-sm">${m.content}</p>`;
+            d.className = `p-3 rounded-2xl max-w-[85%] ${isMe ? 'bg-indigo-600 ml-auto' : 'bg-zinc-800'}`;
+            d.innerHTML = `<p class="text-[8px] opacity-40 font-black uppercase">${m.username}</p><p class="text-sm">${m.content}</p>`;
             box.appendChild(d); box.scrollTop = box.scrollHeight;
         }
-
         function setupRealtime() {
             _supabase.removeAllChannels();
             _supabase.channel(`room-${activeCh}`)
@@ -143,9 +119,8 @@
                 .on('broadcast', { event: 'point' }, (p) => showPointer(p.payload))
                 .subscribe();
         }
-
         async function handleSignal(payload) {
-            if (!pc) await initWebRTC(false);
+            if (!pc) await initWebRTC();
             if (payload.type === 'offer') {
                 await pc.setRemoteDescription(payload);
                 const answer = await pc.createAnswer();
@@ -154,7 +129,6 @@
             } else if (payload.type === 'answer') { await pc.setRemoteDescription(payload); }
             else if (payload.type === 'candidate') { await pc.addIceCandidate(payload.candidate); }
         }
-
         async function initWebRTC() {
             localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
             document.getElementById('localVideo').srcObject = localStream;
@@ -163,7 +137,6 @@
             pc.ontrack = e => document.getElementById('remoteVideo').srcObject = e.streams[0];
             pc.onicecandidate = e => { if(e.candidate) sendSignal({ type: 'candidate', candidate: e.candidate }); };
         }
-
         async function startCall() {
             document.getElementById('call-panel').classList.remove('hidden');
             await initWebRTC();
@@ -171,30 +144,16 @@
             await pc.setLocalDescription(offer);
             sendSignal(offer);
         }
-
-        function togglePointer() { pointerEnabled = !pointerEnabled; document.getElementById('ptr-btn').classList.toggle('bg-green-600'); }
-
-        document.getElementById('remoteVideo').onclick = (e) => {
-            if (!pointerEnabled) return;
-            const rect = e.target.getBoundingClientRect();
-            const x = ((e.clientX - rect.left) / rect.width) * 100;
-            const y = ((e.clientY - rect.top) / rect.height) * 100;
-            _supabase.channel(`room-${activeCh}`).send({ type: 'broadcast', event: 'point', payload: { x, y } });
-        };
-
         function showPointer(p) {
             const dot = document.getElementById('remote-pointer');
             dot.style.left = p.x + "%"; dot.style.top = p.y + "%";
-            dot.classList.remove('hidden');
-            setTimeout(() => dot.classList.add('hidden'), 2000);
+            dot.classList.remove('hidden'); setTimeout(() => dot.classList.add('hidden'), 2000);
         }
-
         function sendSignal(payload) { _supabase.channel(`room-${activeCh}`).send({ type: 'broadcast', event: 'signal', payload }); }
         function endCall() { localStream?.getTracks().forEach(t => t.stop()); location.reload(); }
         document.getElementById('chat-form').onsubmit = async (e) => {
             e.preventDefault();
-            const i = document.getElementById('msg-input');
-            if(!i.value.trim()) return;
+            const i = document.getElementById('msg-input'); if(!i.value.trim()) return;
             await _supabase.from('messages').insert([{ content: i.value, channel_id: activeCh, username: user.email.split('@')[0], user_id: user.id }]);
             i.value = '';
         }
