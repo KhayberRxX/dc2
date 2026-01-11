@@ -2,59 +2,57 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <title>Pro Chat PC - V19</title>
+    <title>Pro Chat PC - V20</title>
     <script>if (/Android|iPhone|iPad/i.test(navigator.userAgent)) window.location.href = "mobile.html";</script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>.mirror { transform: scaleX(-1); } video { background: #000; border-radius: 1rem; width: 100%; aspect-ratio: 16/9; object-fit: cover; border: 2px solid #27272a; }</style>
+    <style>.mirror { transform: scaleX(-1); } video { background: #000; border-radius: 1rem; width: 100%; aspect-ratio: 16/9; object-fit: cover; border: 2px solid #333; }</style>
 </head>
-<body class="bg-zinc-950 text-white h-screen flex overflow-hidden font-sans">
+<body class="bg-zinc-950 text-white h-screen flex overflow-hidden">
 
     <div id="auth-screen" class="fixed inset-0 z-[100] bg-zinc-950 flex items-center justify-center">
-        <div class="bg-zinc-900 p-10 rounded-3xl border border-zinc-800 text-center w-80 shadow-2xl">
-            <h1 class="text-3xl font-black mb-6 text-indigo-500 italic">PRO CHAT</h1>
-            <input id="auth-email" class="w-full p-4 mb-2 bg-zinc-800 rounded-2xl outline-none" placeholder="E-posta">
-            <input id="auth-password" type="password" class="w-full p-4 mb-8 bg-zinc-800 rounded-2xl outline-none" placeholder="Şifre">
-            <button onclick="handleAuth('login')" class="w-full bg-indigo-600 py-4 rounded-2xl font-bold mb-2 active:scale-95 transition">GİRİŞ</button>
-            <button onclick="handleAuth('signup')" class="w-full text-zinc-500 text-xs uppercase font-bold">KAYIT OL</button>
+        <div class="bg-zinc-900 p-8 rounded-3xl border border-zinc-800 text-center w-80">
+            <h1 class="text-2xl font-black mb-6 text-indigo-500 uppercase italic">PRO CHAT</h1>
+            <input id="auth-email" class="w-full p-3 mb-2 bg-zinc-800 rounded-xl outline-none" placeholder="E-posta">
+            <input id="auth-password" type="password" class="w-full p-3 mb-6 bg-zinc-800 rounded-xl outline-none" placeholder="Şifre">
+            <button onclick="handleAuth('login')" class="w-full bg-indigo-600 py-3 rounded-xl font-bold">GİRİŞ</button>
         </div>
     </div>
 
     <aside class="w-64 bg-zinc-900 flex flex-col border-r border-zinc-800">
-        <div class="p-6 font-black text-indigo-500 border-b border-zinc-800 tracking-tighter text-xl italic">DISCORD CLONE</div>
-        <div id="channel-list" class="flex-1 p-2 overflow-y-auto space-y-1"></div>
-        <div class="p-4 border-t border-zinc-800 bg-zinc-950/50">
-            <input id="new-ch" class="w-full p-3 bg-zinc-800 rounded-xl mb-2 text-xs outline-none" placeholder="Yeni Grup Adı...">
-            <button onclick="createChannel()" class="w-full bg-indigo-600 py-2 rounded-xl text-[10px] font-bold uppercase">GRUP OLUŞTUR</button>
+        <div id="channel-list" class="flex-1 p-2 space-y-1 overflow-y-auto"></div>
+        <div class="p-4 bg-black/20">
+            <input id="new-ch" class="w-full p-2 bg-zinc-800 rounded text-xs mb-2" placeholder="Grup adı...">
+            <button onclick="createChannel()" class="w-full bg-indigo-600 py-1.5 rounded text-[10px] font-bold uppercase">OLUŞTUR</button>
         </div>
     </aside>
 
     <main class="flex-1 flex flex-col relative">
-        <div id="call-invite" class="hidden absolute top-6 left-1/2 -translate-x-1/2 z-50 bg-indigo-600 p-5 rounded-3xl flex items-center gap-6 shadow-2xl border border-indigo-400 animate-pulse">
-            <span class="text-sm font-black uppercase tracking-widest">📞 Gelen Arama!</span>
-            <button onclick="joinCall()" class="bg-white text-indigo-600 px-6 py-2 rounded-xl font-black text-xs hover:scale-105 transition">KATIL</button>
+        <div id="call-invite" class="hidden absolute top-4 left-1/2 -translate-x-1/2 z-50 bg-indigo-600 px-6 py-3 rounded-2xl flex items-center gap-4 shadow-2xl animate-pulse">
+            <span class="text-xs font-bold uppercase">📞 Birisi Aramada</span>
+            <button onclick="joinCall()" class="bg-white text-indigo-600 px-4 py-1 rounded-lg font-black text-[10px]">KATIL</button>
         </div>
 
-        <div id="call-panel" class="hidden bg-zinc-900 p-6 border-b border-zinc-800">
+        <div id="call-panel" class="hidden bg-zinc-900 p-4 border-b border-zinc-800">
             <div class="grid grid-cols-2 gap-4 max-w-4xl mx-auto">
-                <div class="relative"><video id="localVideo" autoplay muted playsinline class="mirror"></video><span class="absolute bottom-4 left-4 bg-black/60 px-3 py-1 rounded-full text-[10px] font-bold">SEN</span></div>
-                <div class="relative"><video id="remoteVideo" autoplay playsinline></video><span class="absolute bottom-4 left-4 bg-black/60 px-3 py-1 rounded-full text-[10px] font-bold">DİĞER</span></div>
+                <video id="localVideo" autoplay muted playsinline class="mirror"></video>
+                <video id="remoteVideo" autoplay playsinline></video>
             </div>
-            <div class="flex justify-center mt-6">
-                <button onclick="location.reload()" class="bg-red-600 px-10 py-3 rounded-full text-xs font-black uppercase shadow-lg hover:bg-red-500">KAPAT</button>
+            <div class="flex justify-center mt-4">
+                <button onclick="location.reload()" class="bg-red-600 px-8 py-2 rounded-full text-[10px] font-black uppercase">KAPAT</button>
             </div>
         </div>
 
-        <header class="h-20 flex items-center justify-between px-8 border-b border-zinc-900 bg-zinc-950/50">
-            <h2 id="ch-title" class="font-black text-zinc-500 uppercase tracking-widest"># KANAL SEÇİN</h2>
-            <button id="call-btn" onclick="startCall()" class="hidden bg-green-600 px-6 py-2 rounded-xl text-xs font-black uppercase hover:bg-green-500 shadow-xl transition">📞 Arama Başlat</button>
+        <header class="h-16 flex items-center justify-between px-6 border-b border-zinc-900">
+            <span id="ch-title" class="font-bold text-zinc-500 uppercase text-xs"># KANAL SEÇİN</span>
+            <button id="call-btn" onclick="startCall()" class="hidden bg-green-600 px-4 py-2 rounded-xl text-[10px] font-black uppercase">📞 ARAMAYI BAŞLAT</button>
         </header>
 
-        <div id="messages" class="flex-1 p-8 overflow-y-auto space-y-4"></div>
+        <div id="messages" class="flex-1 p-6 overflow-y-auto space-y-3"></div>
 
-        <form id="chat-form" class="hidden p-6 bg-zinc-900 border-t border-zinc-800 flex gap-4">
-            <input id="msg-input" class="flex-1 bg-zinc-800 p-4 rounded-2xl outline-none focus:ring-2 ring-indigo-600" placeholder="Bir mesaj yazın...">
-            <button class="bg-indigo-600 px-10 rounded-2xl font-black transition hover:bg-indigo-500">GÖNDER</button>
+        <form id="chat-form" class="hidden p-4 bg-zinc-900 flex gap-2">
+            <input id="msg-input" class="flex-1 bg-zinc-800 p-3 rounded-xl outline-none" placeholder="Mesaj...">
+            <button class="bg-indigo-600 px-6 rounded-xl font-bold italic">GÖNDER</button>
         </form>
     </main>
 
@@ -83,7 +81,7 @@
             const list = document.getElementById('channel-list'); list.innerHTML = '';
             data?.forEach(ch => {
                 const b = document.createElement('button');
-                b.className = "w-full text-left p-4 rounded-xl hover:bg-zinc-800 text-xs font-bold uppercase transition-colors";
+                b.className = "w-full text-left p-3 rounded-xl hover:bg-zinc-800 text-xs font-bold uppercase transition-colors";
                 b.innerText = "# " + ch.name;
                 b.onclick = () => selectChannel(ch);
                 list.appendChild(b);
@@ -115,20 +113,29 @@
         function addMsg(m) {
             const box = document.getElementById('messages'), isMe = m.user_id === user.id;
             const d = document.createElement('div');
-            d.className = `p-4 rounded-3xl max-w-sm ${isMe ? 'bg-indigo-600 ml-auto' : 'bg-zinc-900 border border-zinc-800'}`;
-            d.innerHTML = `<p class="text-[9px] opacity-40 font-black uppercase mb-1">${m.username}</p><p class="text-sm leading-relaxed">${m.content}</p>`;
+            d.className = `p-3 rounded-2xl max-w-sm ${isMe ? 'bg-indigo-600 ml-auto shadow-lg shadow-indigo-500/10' : 'bg-zinc-900 border border-zinc-800'}`;
+            d.innerHTML = `<p class="text-[8px] opacity-40 font-black uppercase">${m.username}</p><p class="text-sm">${m.content}</p>`;
             box.appendChild(d); box.scrollTop = box.scrollHeight;
         }
 
-        // --- WEBRTC CORE ---
+        // --- WEBRTC CONNECTION LOGIC ---
         function setupRealtime() {
             if (channel) _supabase.removeChannel(channel);
             channel = _supabase.channel(`room-${activeCh}`, { config: { broadcast: { self: false } } });
             
             channel
             .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `channel_id=eq.${activeCh}` }, p => addMsg(p.new))
-            .on('broadcast', { event: 'invite' }, () => document.getElementById('call-invite').classList.remove('hidden'))
-            .on('broadcast', { event: 'ready' }, async () => { if(pc) sendOffer(); }) // Katılan biri olduğunda teklif gönder
+            .on('broadcast', { event: 'invite' }, () => {
+                document.getElementById('call-invite').classList.remove('hidden');
+            })
+            .on('broadcast', { event: 'ready' }, async () => {
+                // Karşı taraf katıl tuşuna bastı, şimdi teklif (offer) oluşturabiliriz
+                if(pc) {
+                    const offer = await pc.createOffer();
+                    await pc.setLocalDescription(offer);
+                    channel.send({ type: 'broadcast', event: 'signal', payload: { offer } });
+                }
+            })
             .on('broadcast', { event: 'signal' }, async ({ payload }) => {
                 if (payload.offer) {
                     if (!pc) await initWebRTC();
@@ -139,7 +146,7 @@
                 } else if (payload.answer) {
                     await pc.setRemoteDescription(new RTCSessionDescription(payload.answer));
                 } else if (payload.candidate) {
-                    await pc.addIceCandidate(new RTCIceCandidate(payload.candidate));
+                    try { await pc.addIceCandidate(new RTCIceCandidate(payload.candidate)); } catch(e){}
                 }
             })
             .subscribe();
@@ -147,12 +154,24 @@
 
         async function initWebRTC() {
             if (pc) return;
+            pc = new RTCPeerConnection(config);
             localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
             document.getElementById('localVideo').srcObject = localStream;
-            pc = new RTCPeerConnection(config);
-            localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
-            pc.ontrack = e => { if(e.streams[0]) document.getElementById('remoteVideo').srcObject = e.streams[0]; };
-            pc.onicecandidate = e => { if(e.candidate) channel.send({ type: 'broadcast', event: 'signal', payload: { candidate: e.candidate } }); };
+            
+            localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+            
+            pc.ontrack = (event) => {
+                const remoteVid = document.getElementById('remoteVideo');
+                if (remoteVid.srcObject !== event.streams[0]) {
+                    remoteVid.srcObject = event.streams[0];
+                }
+            };
+
+            pc.onicecandidate = (event) => {
+                if (event.candidate) {
+                    channel.send({ type: 'broadcast', event: 'signal', payload: { candidate: event.candidate } });
+                }
+            };
         }
 
         async function startCall() {
@@ -165,13 +184,10 @@
             document.getElementById('call-invite').classList.add('hidden');
             document.getElementById('call-panel').classList.remove('hidden');
             await initWebRTC();
-            channel.send({ type: 'broadcast', event: 'ready', payload: {} }); // "Ben hazırım, teklif at" sinyali
-        }
-
-        async function sendOffer() {
-            const offer = await pc.createOffer();
-            await pc.setLocalDescription(offer);
-            channel.send({ type: 'broadcast', event: 'signal', payload: { offer } });
+            // Arayan kişiye haber ver: "Kameramı açtım, teklifini gönder"
+            setTimeout(() => {
+                channel.send({ type: 'broadcast', event: 'ready', payload: {} });
+            }, 1000);
         }
 
         document.getElementById('chat-form').onsubmit = async (e) => {
