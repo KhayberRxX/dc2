@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pro Chat PC V15 - Ultimate</title>
+    <title>Pro Chat PC - V16</title>
     <script>if (/Android|iPhone|iPad/i.test(navigator.userAgent)) window.location.href = "mobile.html";</script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -64,19 +64,16 @@
 
     <script>
         let _supabase, user, activeCh, pc, localStream, pointerEnabled = false;
-
         window.onload = () => {
             _supabase = supabase.createClient("https://zdixrufuczabxhvsvwsd.supabase.co", "sb_publishable_cQH31e8TGNu-KuWRIr6_xA_r5yA1eV8");
             checkUser();
         };
-
         async function handleAuth(type) {
             const email = document.getElementById('auth-email').value;
             const password = document.getElementById('auth-password').value;
             const { error } = type === 'login' ? await _supabase.auth.signInWithPassword({email, password}) : await _supabase.auth.signUp({email, password});
             if (error) alert(error.message); else checkUser();
         }
-
         async function checkUser() {
             const { data: { session } } = await _supabase.auth.getSession();
             if (session) {
@@ -89,11 +86,9 @@
                 loadChannels();
             }
         }
-
         async function loadChannels() {
             const { data } = await _supabase.from('channels').select('*');
-            const list = document.getElementById('channel-list');
-            list.innerHTML = '';
+            const list = document.getElementById('channel-list'); list.innerHTML = '';
             data?.forEach(ch => {
                 const b = document.createElement('button');
                 b.className = "w-full text-left p-4 rounded-xl hover:bg-zinc-800 text-sm font-bold uppercase mb-1";
@@ -102,7 +97,6 @@
                 list.appendChild(b);
             });
         }
-
         async function createChannel() {
             const name = document.getElementById('new-ch-name').value;
             if (!name) return;
@@ -110,7 +104,6 @@
             document.getElementById('new-ch-name').value = '';
             loadChannels();
         }
-
         async function selectChannel(ch) {
             activeCh = ch.id;
             document.getElementById('h-text').innerText = "# " + ch.name.toUpperCase();
@@ -119,13 +112,11 @@
             loadMessages();
             setupRealtime();
         }
-
         async function loadMessages() {
             const { data } = await _supabase.from('messages').select('*').eq('channel_id', activeCh).order('created_at');
             const box = document.getElementById('messages'); box.innerHTML = '';
             data?.forEach(addMsg); box.scrollTop = box.scrollHeight;
         }
-
         function addMsg(m) {
             const box = document.getElementById('messages');
             const isMe = m.user_id === user.id;
@@ -134,7 +125,6 @@
             d.innerHTML = `<p class="text-[9px] opacity-40 uppercase font-black">${m.username}</p><p class="text-sm">${m.content}</p>`;
             box.appendChild(d); box.scrollTop = box.scrollHeight;
         }
-
         function setupRealtime() {
             _supabase.removeAllChannels();
             _supabase.channel(`room-${activeCh}`)
@@ -143,9 +133,8 @@
                 .on('broadcast', { event: 'point' }, (p) => showPointer(p.payload))
                 .subscribe();
         }
-
         async function handleSignal(payload) {
-            if (!pc) await initWebRTC(false);
+            if (!pc) await initWebRTC();
             if (payload.type === 'offer') {
                 await pc.setRemoteDescription(payload);
                 const answer = await pc.createAnswer();
@@ -154,7 +143,6 @@
             } else if (payload.type === 'answer') { await pc.setRemoteDescription(payload); }
             else if (payload.type === 'candidate') { await pc.addIceCandidate(payload.candidate); }
         }
-
         async function initWebRTC() {
             localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
             document.getElementById('localVideo').srcObject = localStream;
@@ -163,7 +151,6 @@
             pc.ontrack = e => document.getElementById('remoteVideo').srcObject = e.streams[0];
             pc.onicecandidate = e => { if(e.candidate) sendSignal({ type: 'candidate', candidate: e.candidate }); };
         }
-
         async function startCall() {
             document.getElementById('call-panel').classList.remove('hidden');
             await initWebRTC();
@@ -171,9 +158,7 @@
             await pc.setLocalDescription(offer);
             sendSignal(offer);
         }
-
         function togglePointer() { pointerEnabled = !pointerEnabled; document.getElementById('ptr-btn').classList.toggle('bg-green-600'); }
-
         document.getElementById('remoteVideo').onclick = (e) => {
             if (!pointerEnabled) return;
             const rect = e.target.getBoundingClientRect();
@@ -181,20 +166,16 @@
             const y = ((e.clientY - rect.top) / rect.height) * 100;
             _supabase.channel(`room-${activeCh}`).send({ type: 'broadcast', event: 'point', payload: { x, y } });
         };
-
         function showPointer(p) {
             const dot = document.getElementById('remote-pointer');
             dot.style.left = p.x + "%"; dot.style.top = p.y + "%";
-            dot.classList.remove('hidden');
-            setTimeout(() => dot.classList.add('hidden'), 2000);
+            dot.classList.remove('hidden'); setTimeout(() => dot.classList.add('hidden'), 2000);
         }
-
         function sendSignal(payload) { _supabase.channel(`room-${activeCh}`).send({ type: 'broadcast', event: 'signal', payload }); }
         function endCall() { localStream?.getTracks().forEach(t => t.stop()); location.reload(); }
         document.getElementById('chat-form').onsubmit = async (e) => {
             e.preventDefault();
-            const i = document.getElementById('msg-input');
-            if(!i.value.trim()) return;
+            const i = document.getElementById('msg-input'); if(!i.value.trim()) return;
             await _supabase.from('messages').insert([{ content: i.value, channel_id: activeCh, username: user.email.split('@')[0], user_id: user.id }]);
             i.value = '';
         }
