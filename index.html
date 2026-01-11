@@ -2,60 +2,53 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <title>Pro Chat PC - V21 Premium</title>
+    <title>Pro Chat PC - V22</title>
     <script>if (/Android|iPhone|iPad/i.test(navigator.userAgent)) window.location.href = "mobile.html";</script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .mirror { transform: scaleX(-1); }
-        .pointer-dot { position: absolute; width: 15px; height: 15px; background: #ef4444; border: 2px solid white; border-radius: 50%; pointer-events: none; z-index: 1000; transform: translate(-50%, -50%); box-shadow: 0 0 15px #ef4444; }
-        video { background: #000; border-radius: 1rem; width: 100%; object-fit: cover; border: 2px solid #27272a; transition: all 0.3s; }
-        .fullscreen-remote { position: fixed; inset: 0; z-index: 400; background: black; border-radius: 0; }
+        video { background: #000; border-radius: 1rem; width: 100%; aspect-ratio: 16/9; object-fit: cover; border: 2px solid #27272a; }
+        .ctrl-btn { background: #3f3f46; padding: 12px; rounded-xl: 0.75rem; transition: all 0.2s; border-radius: 12px; }
+        .ctrl-btn.active { background: #4f46e5; }
+        .ctrl-btn.off { background: #ef4444; }
     </style>
 </head>
-<body class="bg-zinc-950 text-white h-screen flex overflow-hidden font-sans">
+<body class="bg-zinc-950 text-white h-screen flex overflow-hidden">
 
     <div id="auth-screen" class="fixed inset-0 z-[500] bg-zinc-950 flex items-center justify-center">
-        <div class="bg-zinc-900 p-8 rounded-3xl border border-zinc-800 text-center w-80 shadow-2xl">
-            <h1 class="text-2xl font-black mb-6 text-indigo-500 italic uppercase">PRO CHAT V21</h1>
-            <input id="auth-email" class="w-full p-4 mb-2 bg-zinc-800 rounded-2xl outline-none" placeholder="E-posta">
-            <input id="auth-password" type="password" class="w-full p-4 mb-6 bg-zinc-800 rounded-2xl outline-none" placeholder="Şifre">
-            <button onclick="handleAuth('login')" class="w-full bg-indigo-600 py-4 rounded-2xl font-bold">GİRİŞ</button>
+        <div class="bg-zinc-900 p-8 rounded-3xl text-center w-80">
+            <h1 class="text-xl font-black mb-6 text-indigo-500 uppercase">Giriş Yap</h1>
+            <input id="auth-email" class="w-full p-3 mb-2 bg-zinc-800 rounded-xl outline-none" placeholder="E-posta">
+            <input id="auth-password" type="password" class="w-full p-3 mb-6 bg-zinc-800 rounded-xl outline-none" placeholder="Şifre">
+            <button onclick="handleAuth('login')" class="w-full bg-indigo-600 py-3 rounded-xl font-bold">GİRİŞ</button>
         </div>
     </div>
 
-    <aside class="w-72 bg-zinc-900 flex flex-col border-r border-zinc-800">
-        <div class="p-6 font-black text-indigo-500 border-b border-zinc-800 italic">V21 PRO PANEL</div>
+    <aside class="w-64 bg-zinc-900 flex flex-col border-r border-zinc-800">
         <div id="channel-list" class="flex-1 p-3 space-y-1 overflow-y-auto"></div>
-        <div class="p-4 bg-zinc-950/40 border-t border-zinc-800">
-            <input id="new-ch" class="w-full p-3 bg-zinc-800 rounded-xl text-xs mb-2 outline-none" placeholder="Yeni Grup...">
-            <button onclick="createChannel()" class="w-full bg-indigo-600 py-2 rounded-xl text-[10px] font-bold">OLUŞTUR</button>
-        </div>
     </aside>
 
     <main class="flex-1 flex flex-col relative">
-        <div id="call-invite" class="hidden absolute top-4 left-1/2 -translate-x-1/2 z-[450] bg-indigo-600 px-6 py-3 rounded-2xl flex items-center gap-4 shadow-2xl animate-bounce">
-            <span class="text-xs font-bold uppercase">📞 Devam Eden Arama Var!</span>
+        <div id="call-invite" class="hidden absolute top-4 left-1/2 -translate-x-1/2 z-[450] bg-indigo-600 px-6 py-3 rounded-2xl flex items-center gap-4 shadow-2xl">
+            <span class="text-xs font-bold uppercase">📞 Aktif Arama Var</span>
             <button onclick="joinCall()" class="bg-white text-indigo-600 px-4 py-1 rounded-lg font-black text-[10px]">KATIL</button>
         </div>
 
-        <div id="call-panel" class="hidden bg-zinc-900 p-4 border-b border-zinc-800">
-            <div class="grid grid-cols-2 gap-4 max-w-5xl mx-auto relative" id="video-grid">
-                <div class="relative group">
+        <div id="call-panel" class="hidden bg-zinc-900 p-6 border-b border-zinc-800">
+            <div class="grid grid-cols-2 gap-4 max-w-5xl mx-auto">
+                <div class="relative">
                     <video id="localVideo" autoplay muted playsinline class="mirror"></video>
-                    <div class="absolute bottom-4 left-4 flex gap-2 opacity-0 group-hover:opacity-100 transition">
-                        <button onclick="toggleMic()" id="mic-btn" class="bg-zinc-800/80 p-2 rounded-lg">🎤</button>
-                        <button onclick="toggleCam()" id="cam-btn" class="bg-zinc-800/80 p-2 rounded-lg">📹</button>
-                        <button onclick="shareScreen()" id="screen-btn" class="bg-zinc-800/80 p-2 rounded-lg">🖥️</button>
+                    <div class="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-3">
+                        <button id="mic-btn" onclick="toggleMic()" class="ctrl-btn off">🔇</button>
+                        <button id="cam-btn" onclick="toggleCam()" class="ctrl-btn off">🚫</button>
+                        <button id="screen-btn" onclick="shareScreen()" class="ctrl-btn">🖥️</button>
                     </div>
                 </div>
-                <div class="relative" id="remote-container">
-                    <video id="remoteVideo" autoplay playsinline onclick="toggleFullscreen()"></video>
-                    <div id="remote-pointer" class="pointer-dot hidden"></div>
-                </div>
+                <video id="remoteVideo" autoplay playsinline></video>
             </div>
-            <div class="flex justify-center mt-4 gap-4">
-                <button onclick="location.reload()" class="bg-red-600 px-8 py-2 rounded-full text-[10px] font-black uppercase">ARAMAYI BİTİR</button>
+            <div class="flex justify-center mt-6">
+                <button onclick="location.reload()" class="bg-red-600 px-10 py-2 rounded-full text-xs font-black">ARAMAYI KAPAT</button>
             </div>
         </div>
 
@@ -66,19 +59,14 @@
 
         <div id="messages" class="flex-1 p-6 overflow-y-auto space-y-3"></div>
 
-        <div id="emoji-panel" class="hidden p-2 bg-zinc-800 flex gap-2 justify-center border-t border-zinc-700">
-            <button onclick="addEmoji('😂')">😂</button><button onclick="addEmoji('🔥')">🔥</button><button onclick="addEmoji('👍')">👍</button><button onclick="addEmoji('❤️')">❤️</button><button onclick="addEmoji('😮')">😮</button>
-        </div>
-        
-        <form id="chat-form" class="hidden p-4 bg-zinc-900 flex gap-2 items-center">
-            <button type="button" onclick="document.getElementById('emoji-panel').classList.toggle('hidden')" class="text-xl">😊</button>
+        <form id="chat-form" class="hidden p-4 bg-zinc-900 flex gap-2">
             <input id="msg-input" class="flex-1 bg-zinc-800 p-3 rounded-xl outline-none" placeholder="Mesaj...">
-            <button class="bg-indigo-600 px-6 py-3 rounded-xl font-bold">GÖNDER</button>
+            <button class="bg-indigo-600 px-6 rounded-xl font-bold">GÖNDER</button>
         </form>
     </main>
 
     <script>
-        let _supabase, user, activeCh, pc, localStream, channel, screenStream;
+        let _supabase, user, activeCh, pc, localStream, channel;
         const config = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
 
         window.onload = () => {
@@ -102,18 +90,11 @@
             const list = document.getElementById('channel-list'); list.innerHTML = '';
             data?.forEach(ch => {
                 const b = document.createElement('button');
-                b.className = "w-full text-left p-3 rounded-xl hover:bg-zinc-800 text-xs font-bold uppercase transition-colors";
+                b.className = "w-full text-left p-3 rounded-xl hover:bg-zinc-800 text-xs font-bold uppercase";
                 b.innerText = "# " + ch.name;
                 b.onclick = () => selectChannel(ch);
                 list.appendChild(b);
             });
-        }
-
-        async function createChannel() {
-            const name = document.getElementById('new-ch').value;
-            if(!name) return;
-            await _supabase.from('channels').insert([{ name, creator_id: user.id }]);
-            location.reload();
         }
 
         async function selectChannel(ch) {
@@ -121,34 +102,27 @@
             document.getElementById('ch-title').innerText = "# " + ch.name;
             document.getElementById('call-btn').classList.remove('hidden');
             document.getElementById('chat-form').classList.remove('hidden');
-            loadMessages();
-            setupRealtime();
+            loadMessages(); setupRealtime();
         }
 
         async function loadMessages() {
             const { data } = await _supabase.from('messages').select('*').eq('channel_id', activeCh).order('created_at');
             const box = document.getElementById('messages'); box.innerHTML = '';
-            data?.forEach(addMsg); box.scrollTop = box.scrollHeight;
+            data?.forEach(m => {
+                const d = document.createElement('div');
+                d.className = `p-3 rounded-2xl max-w-sm ${m.user_id === user.id ? 'bg-indigo-600 ml-auto' : 'bg-zinc-900'}`;
+                d.innerHTML = `<p class="text-[8px] opacity-40 uppercase">${m.username}</p><p class="text-sm">${m.content}</p>`;
+                box.appendChild(d); box.scrollTop = box.scrollHeight;
+            });
         }
 
-        function addMsg(m) {
-            const box = document.getElementById('messages'), isMe = m.user_id === user.id;
-            const d = document.createElement('div');
-            d.className = `p-3 rounded-2xl max-w-sm ${isMe ? 'bg-indigo-600 ml-auto' : 'bg-zinc-900'}`;
-            d.innerHTML = `<p class="text-[8px] opacity-40 font-bold uppercase">${m.username}</p><p class="text-sm">${m.content}</p>`;
-            box.appendChild(d); box.scrollTop = box.scrollHeight;
-        }
-
-        // --- CORE WEBRTC & FEATURES ---
         function setupRealtime() {
             if (channel) _supabase.removeChannel(channel);
             channel = _supabase.channel(`room-${activeCh}`, { config: { broadcast: { self: false } } });
-            
             channel
-            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `channel_id=eq.${activeCh}` }, p => addMsg(p.new))
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `channel_id=eq.${activeCh}` }, p => loadMessages())
             .on('broadcast', { event: 'invite' }, () => document.getElementById('call-invite').classList.remove('hidden'))
             .on('broadcast', { event: 'ready' }, async () => { if(pc) sendOffer(); })
-            .on('broadcast', { event: 'point' }, (p) => showPointer(p.payload))
             .on('broadcast', { event: 'signal' }, async ({ payload }) => {
                 if (payload.offer) {
                     if (!pc) await initWebRTC();
@@ -161,18 +135,21 @@
                 } else if (payload.candidate) {
                     try { await pc.addIceCandidate(new RTCIceCandidate(payload.candidate)); } catch(e){}
                 }
-            })
-            .subscribe();
+            }).subscribe();
         }
 
         async function initWebRTC() {
             if (pc) return;
             pc = new RTCPeerConnection(config);
             localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+            
+            // VARSAYILAN OLARAK KAPAT
+            localStream.getVideoTracks()[0].enabled = false;
+            localStream.getAudioTracks()[0].enabled = false;
+            
             document.getElementById('localVideo').srcObject = localStream;
             localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
-            
-            pc.ontrack = (e) => { document.getElementById('remoteVideo').srcObject = e.streams[0]; };
+            pc.ontrack = (e) => document.getElementById('remoteVideo').srcObject = e.streams[0];
             pc.onicecandidate = (e) => { if(e.candidate) channel.send({ type: 'broadcast', event: 'signal', payload: { candidate: e.candidate } }); };
         }
 
@@ -195,49 +172,34 @@
             channel.send({ type: 'broadcast', event: 'signal', payload: { offer } });
         }
 
-        // --- CONTROLS ---
         function toggleMic() {
-            const audioTrack = localStream.getAudioTracks()[0];
-            audioTrack.enabled = !audioTrack.enabled;
-            document.getElementById('mic-btn').innerText = audioTrack.enabled ? '🎤' : '🔇';
+            const track = localStream.getAudioTracks()[0];
+            track.enabled = !track.enabled;
+            const btn = document.getElementById('mic-btn');
+            btn.innerText = track.enabled ? '🎤' : '🔇';
+            btn.className = `ctrl-btn ${track.enabled ? 'active' : 'off'}`;
         }
+
         function toggleCam() {
-            const videoTrack = localStream.getVideoTracks()[0];
-            videoTrack.enabled = !videoTrack.enabled;
-            document.getElementById('cam-btn').innerText = videoTrack.enabled ? '📹' : '🚫';
+            const track = localStream.getVideoTracks()[0];
+            track.enabled = !track.enabled;
+            const btn = document.getElementById('cam-btn');
+            btn.innerText = track.enabled ? '📹' : '🚫';
+            btn.className = `ctrl-btn ${track.enabled ? 'active' : 'off'}`;
         }
+
         async function shareScreen() {
-            try {
-                screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
-                const videoTrack = screenStream.getVideoTracks()[0];
-                const sender = pc.getSenders().find(s => s.track.kind === 'video');
-                sender.replaceTrack(videoTrack);
-                document.getElementById('localVideo').srcObject = screenStream;
-                videoTrack.onended = () => { sender.replaceTrack(localStream.getVideoTracks()[0]); document.getElementById('localVideo').srcObject = localStream; };
-            } catch (err) { console.error("Ekran paylaşımı hatası:", err); }
+            const s = await navigator.mediaDevices.getDisplayMedia({ video: true });
+            const vt = s.getVideoTracks()[0];
+            const sender = pc.getSenders().find(s => s.track.kind === 'video');
+            sender.replaceTrack(vt);
+            document.getElementById('localVideo').srcObject = s;
+            vt.onended = () => { sender.replaceTrack(localStream.getVideoTracks()[0]); document.getElementById('localVideo').srcObject = localStream; };
         }
 
-        // --- POINTER & FULLSCREEN ---
-        document.getElementById('remoteVideo').onclick = (e) => {
-            const rect = e.target.getBoundingClientRect();
-            const x = ((e.clientX - rect.left) / rect.width) * 100;
-            const y = ((e.clientY - rect.top) / rect.height) * 100;
-            channel.send({ type: 'broadcast', event: 'point', payload: { x, y } });
-        };
-        function showPointer(p) {
-            const dot = document.getElementById('remote-pointer');
-            dot.style.left = p.x + "%"; dot.style.top = p.y + "%";
-            dot.classList.remove('hidden'); setTimeout(() => dot.classList.add('hidden'), 2000);
-        }
-        function toggleFullscreen() {
-            document.getElementById('remoteVideo').classList.toggle('fullscreen-remote');
-        }
-
-        function addEmoji(e) { document.getElementById('msg-input').value += e; document.getElementById('emoji-panel').classList.add('hidden'); }
-        
         document.getElementById('chat-form').onsubmit = async (e) => {
             e.preventDefault();
-            const i = document.getElementById('msg-input'); if(!i.value.trim()) return;
+            const i = document.getElementById('msg-input');
             await _supabase.from('messages').insert([{ content: i.value, channel_id: activeCh, username: user.email.split('@')[0], user_id: user.id }]);
             i.value = '';
         }
