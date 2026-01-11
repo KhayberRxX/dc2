@@ -3,46 +3,54 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Pro Chat Mobile V13</title>
+    <title>Pro Chat Mobile - FULL</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>.mirror { transform: scaleX(-1); } video { background: #000; border-radius: 1rem; }</style>
+    <style>
+        .mirror { transform: scaleX(-1); }
+        video { background: #18181b; border-radius: 1.5rem; object-fit: cover; }
+        .drawer { transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+    </style>
 </head>
-<body class="bg-zinc-950 text-white h-screen flex flex-col overflow-hidden">
+<body class="bg-zinc-950 text-white h-screen flex flex-col overflow-hidden font-sans">
 
-    <div id="auth-screen" class="fixed inset-0 z-[100] bg-zinc-950 flex flex-col items-center justify-center p-6 text-center">
-        <h1 class="text-4xl font-black text-indigo-500 mb-8 italic uppercase">MOBILE</h1>
-        <input id="auth-email" class="w-full p-4 mb-3 bg-zinc-900 rounded-2xl outline-none" placeholder="E-posta">
-        <input id="auth-password" type="password" class="w-full p-4 mb-8 bg-zinc-900 rounded-2xl outline-none" placeholder="Şifre">
-        <button onclick="handleAuth('login')" class="w-full bg-indigo-600 py-4 rounded-2xl font-bold mb-4">Giriş Yap</button>
-        <button onclick="handleAuth('signup')" class="w-full text-zinc-500 font-bold uppercase text-xs">Kayıt Ol</button>
+    <div id="auth-screen" class="fixed inset-0 z-[100] bg-zinc-950 flex flex-col items-center justify-center p-8 text-center">
+        <h1 class="text-4xl font-black text-indigo-500 mb-10 italic uppercase">PRO MOBILE</h1>
+        <input id="auth-email" class="w-full p-4 mb-3 bg-zinc-900 rounded-2xl border border-zinc-800 outline-none focus:ring-2 ring-indigo-500" placeholder="E-posta">
+        <input id="auth-password" type="password" class="w-full p-4 mb-8 bg-zinc-900 rounded-2xl border border-zinc-800 outline-none focus:ring-2 ring-indigo-500" placeholder="Şifre">
+        <button onclick="handleAuth('login')" class="w-full bg-indigo-600 py-4 rounded-2xl font-bold shadow-lg mb-4 active:scale-95 transition">GİRİŞ YAP</button>
+        <button onclick="handleAuth('signup')" class="w-full text-zinc-500 font-bold uppercase text-xs tracking-widest">Kayıt Ol</button>
     </div>
 
-    <header class="h-16 border-b border-zinc-800 flex items-center justify-between px-4">
-        <button onclick="drawer.classList.toggle('-translate-x-full')" class="text-2xl">☰</button>
-        <span id="title" class="font-bold text-sm"># KANAL SEÇ</span>
-        <button id="call-btn" onclick="startCall()" class="hidden bg-green-600 p-2 rounded-lg">📞</button>
+    <header class="h-16 border-b border-zinc-900 flex items-center justify-between px-4 bg-zinc-950/80 backdrop-blur shadow-sm">
+        <button onclick="document.getElementById('drawer').classList.toggle('-translate-x-full')" class="p-2 text-2xl">☰</button>
+        <span id="title" class="font-black text-xs uppercase tracking-widest text-zinc-400"># Kanal Seç</span>
+        <button id="call-btn" onclick="startCall()" class="hidden bg-green-600 p-2.5 rounded-xl shadow-lg shadow-green-600/20">📞</button>
     </header>
 
-    <main id="messages" class="flex-1 overflow-y-auto p-4 space-y-3 bg-zinc-950"></main>
+    <main id="messages" class="flex-1 overflow-y-auto p-4 space-y-4"></main>
 
-    <form id="chat-form" class="hidden p-3 bg-zinc-900 border-t border-zinc-800 flex gap-2">
-        <input id="msg-input" class="flex-1 bg-zinc-800 px-4 py-2 rounded-full outline-none" placeholder="Mesaj...">
-        <button class="bg-indigo-600 w-10 h-10 rounded-full">🚀</button>
+    <form id="chat-form" class="hidden p-4 bg-zinc-900 border-t border-zinc-800 flex gap-2 pb-8">
+        <input id="msg-input" class="flex-1 bg-zinc-800 px-5 py-3 rounded-full outline-none border border-zinc-700 focus:border-indigo-500" placeholder="Mesaj yazın...">
+        <button class="bg-indigo-600 w-12 h-12 rounded-full flex items-center justify-center shadow-lg active:scale-90 transition">🚀</button>
     </form>
 
-    <div id="drawer" class="fixed inset-y-0 left-0 w-64 bg-zinc-900 z-[150] -translate-x-full transition-transform p-4 border-r border-zinc-800">
-        <h2 class="font-black text-indigo-500 mb-6 italic">KANALLAR</h2>
-        <div id="channel-list" class="space-y-2"></div>
+    <div id="drawer" class="drawer fixed inset-y-0 left-0 w-72 bg-zinc-900 z-[150] -translate-x-full border-r border-zinc-800 p-6 shadow-2xl">
+        <div class="flex justify-between items-center mb-10">
+            <h2 class="font-black text-indigo-500 italic uppercase">KANALLAR</h2>
+            <button onclick="document.getElementById('drawer').classList.add('-translate-x-full')" class="text-2xl">×</button>
+        </div>
+        <div id="channel-list" class="space-y-3"></div>
+        <button onclick="logout()" class="absolute bottom-8 left-6 text-red-500 font-bold text-xs uppercase">Çıkış Yap</button>
     </div>
 
     <div id="call-panel" class="hidden fixed inset-0 z-[200] bg-black flex flex-col">
         <div class="flex-1 relative">
             <video id="remoteVideo" autoplay playsinline class="w-full h-full object-cover"></video>
-            <video id="localVideo" autoplay muted playsinline class="absolute top-4 right-4 w-28 h-40 mirror border-2 border-indigo-500 shadow-2xl rounded-2xl"></video>
-        </div>
-        <div class="p-8 bg-zinc-900 rounded-t-[40px] flex justify-center">
-            <button onclick="endCall()" class="w-20 h-20 bg-red-600 rounded-full text-2xl shadow-xl active:scale-90">📞</button>
+            <video id="localVideo" autoplay muted playsinline class="absolute top-6 right-6 w-32 h-44 mirror border-2 border-indigo-500 shadow-2xl rounded-2xl"></video>
+            <div class="absolute bottom-10 left-0 w-full flex justify-center">
+                <button onclick="endCall()" class="w-20 h-20 bg-red-600 rounded-full flex items-center justify-center text-3xl shadow-2xl active:scale-75 transition">📞</button>
+            </div>
         </div>
     </div>
 
@@ -50,7 +58,7 @@
         let _supabase, user, activeCh, pc, localStream;
 
         window.onload = () => {
-            _supabase = supabase.createClient("https://zdixrufuczabxhvsvwsd.supabase.co", "sb_publishable_cQH31e8TGNu-KuWRIr6_xA_r5yA1eV8");
+            _supabase = supabase.createClient("https://zdixrufuczabxhvsvwsd.supabase.co", "sb_publishable_cQH31e8TGNu-KuWRIr6_xA_r5_yA1eV8");
             checkUser();
         };
 
@@ -78,19 +86,21 @@
             list.innerHTML = '';
             data?.forEach(ch => {
                 const b = document.createElement('button');
-                b.className = "w-full text-left p-4 bg-zinc-800 rounded-2xl font-bold uppercase text-xs";
+                b.className = "w-full text-left p-4 bg-zinc-800 rounded-2xl font-bold uppercase text-xs active:bg-indigo-600 transition-all border border-zinc-700 shadow-sm";
                 b.innerText = "# " + ch.name;
-                b.onclick = () => { activeCh = ch.id; title.innerText = ch.name; call_btn.classList.remove('hidden'); chat_form.classList.remove('hidden'); drawer.classList.add('-translate-x-full'); loadMessages(); setupSignaling(); };
+                b.onclick = () => selectChannel(ch);
                 list.appendChild(b);
             });
         }
 
-        function addMsg(m) {
-            const box = document.getElementById('messages');
-            const d = document.createElement('div');
-            d.className = `p-3 rounded-2xl max-w-[85%] ${m.user_id === user.id ? 'bg-indigo-600 ml-auto' : 'bg-zinc-800'}`;
-            d.innerHTML = `<p class="text-[8px] opacity-40 font-black uppercase">${m.username}</p><p class="text-sm">${m.content}</p>`;
-            box.appendChild(d); box.scrollTop = box.scrollHeight;
+        async function selectChannel(ch) {
+            activeCh = ch.id;
+            document.getElementById('title').innerText = "# " + ch.name.toUpperCase();
+            document.getElementById('call-btn').classList.remove('hidden');
+            document.getElementById('chat-form').classList.remove('hidden');
+            document.getElementById('drawer').classList.add('-translate-x-full');
+            loadMessages();
+            setupRealtime();
         }
 
         async function loadMessages() {
@@ -99,42 +109,52 @@
             data?.forEach(addMsg); box.scrollTop = box.scrollHeight;
         }
 
-        // --- MOBILE ARAMA ---
+        function addMsg(m) {
+            const box = document.getElementById('messages');
+            const isMe = m.user_id === user.id;
+            const d = document.createElement('div');
+            d.className = `p-4 rounded-2xl max-w-[85%] shadow-lg ${isMe ? 'bg-indigo-600 ml-auto rounded-tr-none' : 'bg-zinc-800 rounded-tl-none border border-zinc-700'}`;
+            d.innerHTML = `<p class="text-[8px] font-black opacity-40 uppercase mb-1">${m.username}</p><p class="text-sm font-medium leading-relaxed">${m.content}</p>`;
+            box.appendChild(d); box.scrollTop = box.scrollHeight;
+        }
+
+        function setupRealtime() {
+            _supabase.removeAllChannels();
+            _supabase.channel(`room-${activeCh}`)
+                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `channel_id=eq.${activeCh}` }, p => addMsg(p.new))
+                .on('broadcast', { event: 'signal' }, async ({ payload }) => handleSignal(payload))
+                .subscribe();
+        }
+
+        async function handleSignal(payload) {
+            if (!pc) await initWebRTC(false);
+            if (payload.type === 'offer') {
+                await pc.setRemoteDescription(payload);
+                const answer = await pc.createAnswer();
+                await pc.setLocalDescription(answer);
+                sendSignal(answer);
+            } else if (payload.type === 'answer') {
+                await pc.setRemoteDescription(payload);
+            } else if (payload.type === 'candidate') {
+                await pc.addIceCandidate(payload.candidate);
+            }
+        }
+
         async function startCall() {
             document.getElementById('call-panel').classList.remove('hidden');
-            localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-            document.getElementById('localVideo').srcObject = localStream;
-            initWebRTC();
+            await initWebRTC(true);
             const offer = await pc.createOffer();
             await pc.setLocalDescription(offer);
             sendSignal(offer);
         }
 
-        function initWebRTC() {
+        async function initWebRTC(isInitiator) {
+            localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+            document.getElementById('localVideo').srcObject = localStream;
             pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
             localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
             pc.ontrack = e => document.getElementById('remoteVideo').srcObject = e.streams[0];
             pc.onicecandidate = e => { if(e.candidate) sendSignal({ type: 'candidate', candidate: e.candidate }); };
-        }
-
-        function setupSignaling() {
-            _supabase.channel(`room-${activeCh}`).on('broadcast', { event: 'signal' }, async ({ payload }) => {
-                if (!pc) {
-                    localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-                    document.getElementById('localVideo').srcObject = localStream;
-                    initWebRTC();
-                }
-                if (payload.type === 'offer') {
-                    await pc.setRemoteDescription(payload);
-                    const answer = await pc.createAnswer();
-                    await pc.setLocalDescription(answer);
-                    sendSignal(answer);
-                } else if (payload.type === 'answer') {
-                    await pc.setRemoteDescription(payload);
-                } else if (payload.type === 'candidate') {
-                    await pc.addIceCandidate(payload.candidate);
-                }
-            }).subscribe();
         }
 
         async function sendSignal(payload) {
@@ -150,6 +170,8 @@
             await _supabase.from('messages').insert([{ content: input.value, channel_id: activeCh, username: user.email.split('@')[0], user_id: user.id }]);
             input.value = '';
         }
+
+        function logout() { _supabase.auth.signOut().then(() => location.reload()); }
     </script>
 </body>
 </html>
