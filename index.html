@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pro Chat - Realtime</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-zinc-950 text-white font-sans h-screen overflow-hidden">
+
+    <div id="app" class="flex h-full">
+        <div class="w-64 bg-zinc-900 border-r border-zinc-800 flex flex-col">
+            <div class="p-6 font-bold text-xl text-blue-500 border-b border-zinc-800">PRO CHAT</div>
+            <div id="channel-list" class="flex-1 p-4 space-y-2 overflow-y-auto">
+                </div>
+            <div class="p-4 border-t border-zinc-800">
+                <input id="new-channel-input" class="w-full p-2 bg-zinc-800 rounded mb-2 text-sm outline-none" placeholder="Yeni kanal adı...">
+                <button onclick="createChannel()" class="w-full bg-zinc-700 p-2 rounded text-sm hover:bg-zinc-600 transition">+ Kanal Ekle</button>
+            </div>
+        </div>
+
+        <div class="flex-1 flex flex-col bg-zinc-950">
+            <div id="chat-header" class="h-16 flex items-center px-6 border-b border-zinc-800 font-bold text-lg text-zinc-400">
+                Lütfen bir kanal seçin
+            </div>
+            <div id="message-container" class="flex-1 p-6 overflow-y-auto space-y-4 flex flex-col">
+                </div>
+            <form id="chat-form" class="p-4 bg-zinc-900 border-t border-zinc-800 hidden">
+                <div class="flex gap-2">
+                    <input id="message-input" class="flex-1 p-3 bg-zinc-800 rounded-xl outline-none border border-zinc-700 focus:border-blue-500" placeholder="Mesajınızı yazın...">
+                    <button type="submit" class="bg-blue-600 px-6 py-3 rounded-xl font-bold hover:bg-blue-500 transition">GÖNDER</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // --- AYARLAR ---
+        const SUPABASE_URL = "https://zdixrufuczabxhvsvwsd.supabase.co";
+        const SUPABASE_KEY = "sb_publishable_cQH31e8TGNu-KuWRIr6_xA_r5yA1eV8"; // Senin verdiğin anon key
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let currentChannelId = null;
+        let username = "Kullanıcı_" + Math.floor(Math.random() * 1000);
+
+        // --- FONKSİYONLAR ---
+
+        // 1. Kanalları Yükle
+        async function loadChannels() {
+            const { data } = await supabase.from('channels').select('*');
+            const list = document.getElementById('channel-list');
+            list.innerHTML = '';
+            data.forEach(ch => {
+                const btn = document.createElement('button');
+                btn.className = "w-full text-left p-3 rounded-lg hover:bg-zinc-800 transition mb-1 text-zinc-400 hover:text-white";
+                btn.innerText = "# " + ch.name;
+                btn.onclick = () => selectChannel(ch);
+                list.appendChild(btn);
+            });
+        }
+
+        // 2. Kanal Seç ve Mesajları Dinle
+        async function selectChannel(channel) {
+            currentChannelId = channel.id;
+            document.getElementById('chat-header').innerText = "# " + channel.name;
+            document.getElementById('chat-form').classList.remove('hidden');
+            
+            // Eski mesajları çek
+            const { data } = await supabase.from('messages').select('*').eq('channel_id', channel.id).order('created_at', { ascending: true });
+            const container = document.getElementById('message-container');
+            container.innerHTML = '';
+            data?.forEach(msg => appendMessage(msg));
+
+            // Realtime Dinleyiciyi Başlat
+            supabase.channel('public:messages')
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `channel_id=eq.${channel.id}` }, payload => {
+                appendMessage(payload.new);
+            }).subscribe();
+        }
+
+        // 3. Ekrana Mesaj Ekle
+        function appendMessage(msg) {
+            const container = document.getElementById('message-container');
+            const div = document.createElement('div');
+            div.className = "bg-zinc-800 p-3 rounded-2xl max-w-md w-fit";
+            div.innerHTML = `<p class="text-[10px] text-blue-500 font-bold uppercase">${msg.username || 'Anonim'}</p><p class="text-sm">${msg.content}</p>`;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        // 4. Mesaj Gönder
+        document.getElementById('chat-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const input = document.getElementById('message-input');
+            if(!input.value || !currentChannelId) return;
+
+            await supabase.from('messages').insert([
+                { content: input.value, channel_id: currentChannelId, username: username }
+            ]);
+            input.value = '';
+        }
+
+        // 5. Yeni Kanal Oluştur
+        async function createChannel() {
+            const input = document.getElementById('new-channel-input');
+            if(!input.value) return;
+            await supabase.from('channels').insert([{ name: input.value }]);
+            input.value = '';
+            loadChannels();
+        }
+
+        // Başlangıçta kanalları yükle
+        loadChannels();
+    </script>
+</body>
+</html>
