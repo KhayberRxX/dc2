@@ -10,22 +10,23 @@ let isCamOn = true;
 const ringtone = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
 ringtone.loop = true;
 
+// URL'den davet kontrolü
 const inviteId = new URLSearchParams(window.location.search).get('invite');
 if (inviteId) document.getElementById('invite-alert').classList.remove('hidden');
 
 // --- AUTH İŞLEMLERİ ---
-async function handleAuth(type) {
+window.handleAuth = async (type) => {
     const email = document.getElementById('auth-email').value.trim();
     const password = document.getElementById('auth-password').value;
-    if (!email || !password) return alert("Bilgileri girin!");
+    if (!email || !password) return alert("Lütfen alanları doldurun.");
 
     const { data, error } = type === 'login' 
         ? await _supabase.auth.signInWithPassword({ email, password })
         : await _supabase.auth.signUp({ email, password });
 
-    if (error) alert("Hata: " + error.message);
+    if (error) alert("Giriş Hatası: " + error.message);
     else checkUser();
-}
+};
 
 async function checkUser() {
     const { data: { session } } = await _supabase.auth.getSession();
@@ -34,11 +35,14 @@ async function checkUser() {
         document.getElementById('auth-screen').classList.add('hidden');
         document.getElementById('chat-screen').classList.remove('hidden');
         
+        // Davet linki varsa katılım yap
         if (inviteId) {
             await _supabase.from('channel_members').upsert([{ channel_id: inviteId, user_id: currentUser.id }]);
             window.history.replaceState({}, document.title, window.location.pathname);
+            alert("Kanala başarıyla katıldınız!");
         }
 
+        // Admin Kontrolü
         if (currentUser.email === 'test@test.com') {
             document.getElementById('admin-btn').classList.remove('hidden');
         }
@@ -46,7 +50,7 @@ async function checkUser() {
     }
 }
 
-// --- KANAL YÖNETİMİ ---
+// --- KANAL İŞLEMLERİ ---
 async function loadChannels() {
     const { data } = await _supabase.from('channels').select('*');
     const list = document.getElementById('channel-list');
@@ -60,7 +64,7 @@ async function loadChannels() {
     });
 }
 
-async function createChannel() {
+window.createChannel = async () => {
     const name = document.getElementById('new-channel-name').value.trim();
     if (!name) return;
     const { data, error } = await _supabase.from('channels').insert([{ name: name, creator_id: currentUser.id }]).select();
@@ -68,8 +72,8 @@ async function createChannel() {
         await _supabase.from('channel_members').insert([{ channel_id: data[0].id, user_id: currentUser.id }]);
         document.getElementById('new-channel-name').value = '';
         loadChannels();
-    }
-}
+    } else if (error) alert(error.message);
+};
 
 async function selectChannel(ch) {
     activeChannelId = ch.id;
@@ -89,7 +93,6 @@ async function selectChannel(ch) {
     }, p => addMsg(p.new)).subscribe();
 }
 
-// --- MESAJLAŞMA ---
 function addMsg(m) {
     const box = document.getElementById('messages');
     const isMe = m.user_id === currentUser.id;
@@ -103,75 +106,66 @@ function addMsg(m) {
 document.getElementById('chat-form').onsubmit = async (e) => {
     e.preventDefault();
     const i = document.getElementById('msg-input');
-    if (!i.value.trim()) return;
+    if (!i.value.trim() || !activeChannelId) return;
     await _supabase.from('messages').insert([{ 
         content: i.value, channel_id: activeChannelId, 
         username: currentUser.email.split('@')[0], user_id: currentUser.id 
-            }]);
+    }]);
     i.value = '';
-}
+};
 
-// --- VIDEO ARAMA ---
-async function startCall() {
+// --- ADMİN PANELİ ---
+window.toggleAdminPanel = async () => {
+    const panel = document.getElementById('admin-panel');
+    panel.classList.toggle('translate-x-full');
+    if (!panel.classList.contains('translate-x-full')) {
+        const { data } = await _supabase.from('channels').select('*');
+        const list = document.getElementById('all-channels-list');
+        list.innerHTML = '';
+        data?.forEach(ch => {
+            const div = document.createElement('div');
+            div.className = "bg-zinc-800 p-4 rounded-2xl flex justify-between items-center border border-zinc-700";
+            div.innerHTML = `<span class="text-xs font-bold text-zinc-300"># ${ch.name}</span><button onclick="deleteChannel('${ch.id}')" class="text-[10px] bg-red-600 px-3 py-1 rounded-xl font-black hover:bg-red-500 transition">SİL</button>`;
+            list.appendChild(div);
+        });
+    }
+};
+
+window.deleteChannel = async (id) => {
+    if (confirm("Bu kanalı silersen içindeki her şey gider. Onaylıyor musun?")) {
+        const { error } = await _supabase.from('channels').delete().eq('id', id);
+        if (error) alert(error.message);
+        else {
+            window.toggleAdminPanel(); // Listeyi yenilemek için
+            loadChannels();
+        }
+    }
+};
+
+// --- DİĞER FONKSİYONLAR ---
+window.startCall = async () => {
     try {
         ringtone.play();
         localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
         document.getElementById('video-panel').classList.remove('hidden');
         document.getElementById('localVideo').srcObject = localStream;
-    } catch (err) { alert("İzin verilmedi!"); ringtone.pause(); }
-}
+    } catch (err) { alert("Kamera ve mikrofon izni gerekiyor!"); ringtone.pause(); }
+};
 
-function toggleMic() {
-    isMicOn = !isMicOn;
-    localStream.getAudioTracks()[0].enabled = isMicOn;
-    document.getElementById('mic-btn').innerText = isMicOn ? "🎙️" : "🔇";
-}
-
-function toggleCam() {
-    isCamOn = !isCamOn;
-    localStream.getVideoTracks()[0].enabled = isCamOn;
-    document.getElementById('cam-btn').innerText = isCamOn ? "📷" : "🚫";
-}
-
-function endCall() {
+window.endCall = () => {
     ringtone.pause();
     localStream?.getTracks().forEach(t => t.stop());
     document.getElementById('video-panel').classList.add('hidden');
-}
+};
 
-// --- YÖNETİM & DİĞER ---
-function toggleAdminPanel() {
-    const panel = document.getElementById('admin-panel');
-    panel.classList.toggle('translate-x-full');
-    if (!panel.classList.contains('translate-x-full')) loadAdminChannels();
-}
-
-async function loadAdminChannels() {
-    const { data } = await _supabase.from('channels').select('*');
-    const list = document.getElementById('all-channels-list');
-    list.innerHTML = '';
-    data?.forEach(ch => {
-        const div = document.createElement('div');
-        div.className = "bg-zinc-800 p-4 rounded-2xl flex justify-between items-center border border-zinc-700 shadow-lg";
-        div.innerHTML = `<span class="text-xs font-bold text-zinc-300"># ${ch.name}</span><button onclick="deleteChannel('${ch.id}')" class="text-[10px] bg-red-600 px-3 py-1 rounded-xl font-black hover:bg-red-500">SİL</button>`;
-        list.appendChild(div);
-    });
-}
-
-async function deleteChannel(id) {
-    if (confirm("Kanalı silmek istediğine emin misin?")) {
-        await _supabase.from('channels').delete().eq('id', id);
-        loadAdminChannels();
-        loadChannels();
-        if(activeChannelId === id) location.reload();
-    }
-}
-
-function copyInviteLink() {
+window.copyInviteLink = () => {
     const link = `${window.location.origin}${window.location.pathname}?invite=${activeChannelId}`;
-    navigator.clipboard.writeText(link).then(() => alert("Davet linki kopyalandı!"));
-}
+    navigator.clipboard.writeText(link).then(() => alert("Davet linki kopyalandı! Arkadaşına gönder."));
+};
 
-async function logout() { await _supabase.auth.signOut(); location.reload(); }
+window.logout = async () => {
+    await _supabase.auth.signOut();
+    location.reload();
+};
 
 checkUser();
