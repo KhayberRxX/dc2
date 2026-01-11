@@ -1,13 +1,12 @@
 .mirror { transform: scaleX(-1); }
 #messages::-webkit-scrollbar { width: 4px; }
 #messages::-webkit-scrollbar-thumb { background: #3b82f6; border-radius: 10px; }
-.admin-glow { box-shadow: 0 0 20px rgba(245, 158, 11, 0.2); }
 
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
+    from { opacity: 0; transform: translateY(8px); }
     to { opacity: 1; transform: translateY(0); }
 }
 
 #messages > div {
-    animation: fadeIn 0.3s ease forwards;
+    animation: fadeIn 0.2s ease-out forwards;
 }
