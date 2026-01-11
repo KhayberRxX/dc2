@@ -1,54 +1,45 @@
-// 1. Supabase Bağlantısını Sağlamlaştır
+// script.js dosyasının TAMAMI
+
 const { createClient } = supabase;
 const _supabase = createClient(
     "https://zdixrufuczabxhvsvwsd.supabase.co", 
-    "sb_publishable_cQH31e8TGNu-KuWRIr6_xA_r5yA1eV8",
-    {
-        auth: {
-            persistSession: true, // Oturumu tarayıcıda sakla
-            autoRefreshToken: true // Süre dolduğunda otomatik yenile
-        }
-    }
+    "sb_publishable_cQH31e8TGNu-KuWRIr6_xA_r5yA1eV8"
 );
 
-// 2. Güncellenmiş Giriş/Kayıt Fonksiyonu
-async function handleAuth(type) {
+let currentUser = null;
+
+// Fonksiyonu window'a bağlayarak "not defined" hatasını engelliyoruz
+window.handleAuth = async function(type) {
     const email = document.getElementById('auth-email').value.trim();
     const password = document.getElementById('auth-password').value;
 
     if (!email || !password) {
-        alert("Lütfen tüm alanları doldurun.");
+        alert("Lütfen e-posta ve şifre girin.");
         return;
     }
 
-    let result;
-    if (type === 'login') {
-        result = await _supabase.auth.signInWithPassword({ email, password });
-    } else {
-        result = await _supabase.auth.signUp({ email, password });
+    try {
+        let result;
+        if (type === 'login') {
+            result = await _supabase.auth.signInWithPassword({ email, password });
+        } else {
+            result = await _supabase.auth.signUp({ email, password });
+        }
+
+        if (result.error) {
+            alert("Hata: " + result.error.message);
+        } else {
+            console.log("Giriş başarılı!");
+            checkUser();
+        }
+    } catch (err) {
+        console.error("Beklenmedik hata:", err);
     }
+};
 
-    const { data, error } = result;
-
-    if (error) {
-        console.error("Auth Hatası:", error.message);
-        alert("Hata: " + error.message);
-    } else {
-        console.log("Başarılı:", data);
-        checkUser(); // Kullanıcıyı içeri al
-    }
-}
-
-// 3. Oturum Kontrolü (Sayfa her açıldığında çalışır)
-async function checkUser() {
-    const { data: { session }, error } = await _supabase.auth.getSession();
-    
-    if (error) {
-        console.error("Oturum kontrol hatası:", error);
-        return;
-    }
-
-    if (session && session.user) {
+window.checkUser = async function() {
+    const { data: { session } } = await _supabase.auth.getSession();
+    if (session) {
         currentUser = session.user;
         document.getElementById('auth-screen').classList.add('hidden');
         document.getElementById('chat-screen').classList.remove('hidden');
@@ -58,9 +49,14 @@ async function checkUser() {
             document.getElementById('admin-btn').classList.remove('hidden');
         }
         
-        loadChannels();
-    } else {
-        document.getElementById('auth-screen').classList.remove('hidden');
-        document.getElementById('chat-screen').classList.add('hidden');
+        if(typeof loadChannels === "function") loadChannels();
     }
-}
+};
+
+window.logout = async function() {
+    await _supabase.auth.signOut();
+    location.reload();
+};
+
+// Sayfa yüklendiğinde oturumu kontrol et
+document.addEventListener('DOMContentLoaded', checkUser);
