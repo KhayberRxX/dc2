@@ -3,56 +3,52 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Pro Chat Mobile - V19</title>
+    <title>Pro Chat Mobile - V20</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>.mirror { transform: scaleX(-1); } video { background: #18181b; border-radius: 1.5rem; width: 100%; height: 100%; object-fit: cover; }</style>
+    <style>.mirror { transform: scaleX(-1); } video { background: #000; border-radius: 1rem; width: 100%; height: 100%; object-fit: cover; }</style>
 </head>
-<body class="bg-zinc-950 text-white h-screen flex flex-col overflow-hidden font-sans">
+<body class="bg-zinc-950 text-white h-screen flex flex-col overflow-hidden">
 
-    <div id="auth-screen" class="fixed inset-0 z-[100] bg-zinc-950 flex flex-col items-center justify-center p-8 text-center">
-        <h1 class="text-4xl font-black text-indigo-500 mb-8 italic italic">MOBILE</h1>
-        <input id="auth-email" class="w-full p-5 mb-3 bg-zinc-900 rounded-3xl outline-none" placeholder="E-posta">
-        <input id="auth-password" type="password" class="w-full p-5 mb-10 bg-zinc-900 rounded-3xl outline-none" placeholder="Şifre">
-        <button onclick="handleAuth('login')" class="w-full bg-indigo-600 py-5 rounded-3xl font-black text-lg shadow-xl active:scale-95 transition">GİRİŞ YAP</button>
-        <button onclick="handleAuth('signup')" class="mt-6 text-zinc-500 font-bold uppercase text-xs">Hesap Oluştur</button>
+    <div id="auth-screen" class="fixed inset-0 z-[100] bg-zinc-950 flex flex-col items-center justify-center p-6 text-center">
+        <h1 class="text-4xl font-black text-indigo-500 mb-8 italic uppercase">MOBILE</h1>
+        <input id="auth-email" class="w-full p-4 mb-2 bg-zinc-900 rounded-2xl outline-none" placeholder="E-posta">
+        <input id="auth-password" type="password" class="w-full p-4 mb-8 bg-zinc-900 rounded-2xl outline-none" placeholder="Şifre">
+        <button onclick="handleAuth('login')" class="w-full bg-indigo-600 py-4 rounded-2xl font-black">GİRİŞ YAP</button>
     </div>
 
-    <div id="call-invite" class="hidden absolute top-20 left-4 right-4 z-[250] bg-indigo-600 p-8 rounded-[3rem] shadow-2xl text-center border-2 border-indigo-400 animate-bounce">
-        <p class="font-black text-xl mb-6 tracking-tighter uppercase">GELEN ARAMA!</p>
-        <button onclick="joinCall()" class="w-full bg-white text-indigo-600 py-4 rounded-2xl font-black shadow-lg">KATIL</button>
+    <div id="call-invite" class="hidden absolute top-20 left-4 right-4 z-[250] bg-indigo-600 p-6 rounded-[2rem] shadow-2xl text-center border border-indigo-400">
+        <p class="font-bold mb-4">GELEN ARAMA!</p>
+        <button onclick="joinCall()" class="w-full bg-white text-indigo-600 py-3 rounded-xl font-black uppercase text-xs">Aramaya Katıl</button>
     </div>
 
-    <header class="h-16 border-b border-zinc-900 flex items-center justify-between px-6 bg-zinc-950">
-        <button onclick="drawer.classList.toggle('-translate-x-full')" class="text-3xl text-indigo-500">☰</button>
-        <span id="title" class="text-[10px] font-black uppercase text-zinc-500 tracking-[0.2em]"># KANAL SEÇ</span>
-        <button id="call-btn" onclick="startCall()" class="hidden bg-green-600 p-3 rounded-2xl">📞</button>
+    <header class="h-16 border-b border-zinc-900 flex items-center justify-between px-4 bg-zinc-950">
+        <button onclick="drawer.classList.toggle('-translate-x-full')" class="text-2xl text-indigo-500">☰</button>
+        <span id="title" class="text-[10px] font-black uppercase text-zinc-500 tracking-widest"># KANAL SEÇ</span>
+        <button id="call-btn" onclick="startCall()" class="hidden bg-green-600 p-2.5 rounded-xl">📞</button>
     </header>
 
-    <main id="messages" class="flex-1 overflow-y-auto p-6 space-y-4 bg-zinc-950"></main>
+    <main id="messages" class="flex-1 overflow-y-auto p-4 space-y-4"></main>
 
-    <form id="chat-form" class="hidden p-4 bg-zinc-900 flex gap-3 pb-10 border-t border-zinc-800">
-        <input id="msg-input" class="flex-1 bg-zinc-800 px-6 py-3 rounded-full outline-none text-sm" placeholder="Mesaj yaz...">
-        <button class="bg-indigo-600 w-12 h-12 rounded-full flex items-center justify-center font-black shadow-lg">🚀</button>
+    <form id="chat-form" class="hidden p-4 bg-zinc-900 flex gap-2 pb-8">
+        <input id="msg-input" class="flex-1 bg-zinc-800 px-4 py-2 rounded-full outline-none" placeholder="Mesaj...">
+        <button class="bg-indigo-600 w-10 h-10 rounded-full flex items-center justify-center font-bold">></button>
     </form>
 
-    <div id="drawer" class="fixed inset-y-0 left-0 w-80 bg-zinc-900 z-[150] -translate-x-full transition-transform p-8 border-r border-zinc-800 shadow-2xl">
-        <h2 class="font-black text-indigo-500 mb-8 italic text-2xl uppercase italic">KANALLAR</h2>
-        <div id="channel-list" class="space-y-3 mb-10 overflow-y-auto max-h-[50%]"></div>
-        <div class="pt-8 border-t border-zinc-800">
-            <input id="new-ch" class="w-full p-4 bg-zinc-800 rounded-2xl mb-3 text-xs outline-none" placeholder="Grup adı...">
-            <button onclick="createChannel()" class="w-full bg-indigo-600 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest">OLUŞTUR</button>
-        </div>
-        <button onclick="logout()" class="absolute bottom-12 left-8 text-red-500 font-black text-xs uppercase">ÇIKIŞ YAP</button>
+    <div id="drawer" class="fixed inset-y-0 left-0 w-64 bg-zinc-900 z-[150] -translate-x-full transition-transform p-6 border-r border-zinc-800 shadow-2xl">
+        <h2 class="font-black text-indigo-500 mb-4">KANALLAR</h2>
+        <div id="channel-list" class="space-y-2 mb-6 overflow-y-auto max-h-[50%]"></div>
+        <input id="new-ch" class="w-full p-2 bg-zinc-800 rounded mb-2 text-xs outline-none" placeholder="Grup adı...">
+        <button onclick="createChannel()" class="w-full bg-indigo-600 py-2 rounded text-[10px] font-bold uppercase">OLUŞTUR</button>
     </div>
 
     <div id="call-panel" class="hidden fixed inset-0 z-[300] bg-black flex flex-col">
         <div class="flex-1 relative">
             <video id="remoteVideo" autoplay playsinline class="w-full h-full"></video>
-            <video id="localVideo" autoplay muted playsinline class="absolute top-6 right-6 w-32 h-48 mirror border-2 border-indigo-500 rounded-3xl shadow-2xl"></video>
+            <video id="localVideo" autoplay muted playsinline class="absolute top-4 right-4 w-24 h-32 mirror border-2 border-indigo-600 rounded-xl"></video>
         </div>
-        <div class="p-12 bg-zinc-900 flex justify-center pb-20">
-            <button onclick="location.reload()" class="w-20 h-20 bg-red-600 rounded-full flex items-center justify-center shadow-2xl active:scale-75 transition text-3xl">📞</button>
+        <div class="p-8 bg-zinc-900 flex justify-center pb-12">
+            <button onclick="location.reload()" class="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center">📞</button>
         </div>
     </div>
 
@@ -81,7 +77,7 @@
             const list = document.getElementById('channel-list'); list.innerHTML = '';
             data?.forEach(ch => {
                 const b = document.createElement('button');
-                b.className = "w-full text-left p-5 bg-zinc-800 rounded-3xl font-black uppercase text-[10px] active:bg-indigo-600 shadow-sm";
+                b.className = "w-full text-left p-4 bg-zinc-800 rounded-xl font-bold text-xs";
                 b.innerText = "# " + ch.name;
                 b.onclick = () => selectChannel(ch);
                 list.appendChild(b);
@@ -114,8 +110,8 @@
         function addMsg(m) {
             const box = document.getElementById('messages'), isMe = m.user_id === user.id;
             const d = document.createElement('div');
-            d.className = `p-4 rounded-[1.8rem] max-w-[85%] ${isMe ? 'bg-indigo-600 ml-auto' : 'bg-zinc-800'}`;
-            d.innerHTML = `<p class="text-[8px] opacity-40 font-black uppercase mb-1">${m.username}</p><p class="text-[13px] leading-tight">${m.content}</p>`;
+            d.className = `p-3 rounded-2xl max-w-[80%] ${isMe ? 'bg-indigo-600 ml-auto' : 'bg-zinc-800'}`;
+            d.innerHTML = `<p class="text-[8px] opacity-40 uppercase">${m.username}</p><p class="text-sm">${m.content}</p>`;
             box.appendChild(d); box.scrollTop = box.scrollHeight;
         }
 
@@ -125,8 +121,16 @@
             
             channel
             .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `channel_id=eq.${activeCh}` }, p => addMsg(p.new))
-            .on('broadcast', { event: 'invite' }, () => document.getElementById('call-invite').classList.remove('hidden'))
-            .on('broadcast', { event: 'ready' }, async () => { if(pc) sendOffer(); })
+            .on('broadcast', { event: 'invite' }, () => {
+                document.getElementById('call-invite').classList.remove('hidden');
+            })
+            .on('broadcast', { event: 'ready' }, async () => {
+                if(pc) {
+                    const offer = await pc.createOffer();
+                    await pc.setLocalDescription(offer);
+                    channel.send({ type: 'broadcast', event: 'signal', payload: { offer } });
+                }
+            })
             .on('broadcast', { event: 'signal' }, async ({ payload }) => {
                 if (payload.offer) {
                     if (!pc) await initWebRTC();
@@ -137,7 +141,7 @@
                 } else if (payload.answer) {
                     await pc.setRemoteDescription(new RTCSessionDescription(payload.answer));
                 } else if (payload.candidate) {
-                    await pc.addIceCandidate(new RTCIceCandidate(payload.candidate));
+                    try { await pc.addIceCandidate(new RTCIceCandidate(payload.candidate)); } catch(e){}
                 }
             })
             .subscribe();
@@ -145,12 +149,25 @@
 
         async function initWebRTC() {
             if (pc) return;
+            pc = new RTCPeerConnection(config);
             localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
             document.getElementById('localVideo').srcObject = localStream;
-            pc = new RTCPeerConnection(config);
-            localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
-            pc.ontrack = e => { if(e.streams[0]) document.getElementById('remoteVideo').srcObject = e.streams[0]; };
-            pc.onicecandidate = e => { if(e.candidate) channel.send({ type: 'broadcast', event: 'signal', payload: { candidate: e.candidate } }); };
+            
+            localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+            
+            pc.ontrack = (event) => {
+                const remoteVid = document.getElementById('remoteVideo');
+                if (remoteVid.srcObject !== event.streams[0]) {
+                    remoteVid.srcObject = event.streams[0];
+                    remoteVid.play().catch(e => console.log("Oynatma hatası:", e));
+                }
+            };
+
+            pc.onicecandidate = (event) => {
+                if (event.candidate) {
+                    channel.send({ type: 'broadcast', event: 'signal', payload: { candidate: event.candidate } });
+                }
+            };
         }
 
         async function startCall() {
@@ -163,13 +180,9 @@
             document.getElementById('call-invite').classList.add('hidden');
             document.getElementById('call-panel').classList.remove('hidden');
             await initWebRTC();
-            channel.send({ type: 'broadcast', event: 'ready', payload: {} });
-        }
-
-        async function sendOffer() {
-            const offer = await pc.createOffer();
-            await pc.setLocalDescription(offer);
-            channel.send({ type: 'broadcast', event: 'signal', payload: { offer } });
+            setTimeout(() => {
+                channel.send({ type: 'broadcast', event: 'ready', payload: {} });
+            }, 1000);
         }
 
         document.getElementById('chat-form').onsubmit = async (e) => {
@@ -178,7 +191,6 @@
             await _supabase.from('messages').insert([{ content: i.value, channel_id: activeCh, username: user.email.split('@')[0], user_id: user.id }]);
             i.value = '';
         }
-        function logout() { _supabase.auth.signOut().then(() => location.reload()); }
     </script>
 </body>
 </html>
