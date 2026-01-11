@@ -3,119 +3,92 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pro Chat - Realtime</title>
+    <title>Pro Chat - Canlı</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-zinc-950 text-white font-sans h-screen overflow-hidden">
+<body class="bg-zinc-950 text-white h-screen overflow-hidden">
 
     <div id="app" class="flex h-full">
         <div class="w-64 bg-zinc-900 border-r border-zinc-800 flex flex-col">
             <div class="p-6 font-bold text-xl text-blue-500 border-b border-zinc-800">PRO CHAT</div>
-            <div id="channel-list" class="flex-1 p-4 space-y-2 overflow-y-auto">
-                <p class="text-zinc-600 text-xs">Kanallar yükleniyor...</p>
-            </div>
+            <div id="channel-list" class="flex-1 p-4 space-y-2 overflow-y-auto"></div>
             <div class="p-4 border-t border-zinc-800">
-                <input id="new-channel-input" class="w-full p-2 bg-zinc-800 rounded mb-2 text-sm outline-none border border-zinc-700 focus:border-blue-500" placeholder="Yeni kanal adı...">
-                <button onclick="createChannel()" class="w-full bg-blue-600 p-2 rounded text-sm font-bold hover:bg-blue-500 transition">Kanal Oluştur</button>
+                <input id="new-channel-name" class="w-full p-2 bg-zinc-800 rounded mb-2 text-sm outline-none border border-zinc-700 focus:border-blue-500" placeholder="Kanal adı...">
+                <button onclick="createChannel()" class="w-full bg-blue-600 p-2 rounded text-sm font-bold">KANAL OLUŞTUR</button>
             </div>
         </div>
 
         <div class="flex-1 flex flex-col">
-            <div id="chat-header" class="h-16 flex items-center px-6 border-b border-zinc-800 font-bold text-lg text-zinc-400">
-                Lütfen bir kanal seçin
-            </div>
-            <div id="message-container" class="flex-1 p-6 overflow-y-auto space-y-4 flex flex-col">
-                </div>
+            <div id="chat-header" class="h-16 flex items-center px-6 border-b border-zinc-800 font-bold text-lg text-zinc-400"># Kanal Seçin</div>
+            <div id="messages" class="flex-1 p-6 overflow-y-auto space-y-4 flex flex-col"></div>
             <form id="chat-form" class="p-4 bg-zinc-900 border-t border-zinc-800 hidden">
-                <div class="flex gap-2">
-                    <input id="message-input" class="flex-1 p-3 bg-zinc-800 rounded-xl outline-none border border-zinc-700 focus:border-blue-500" placeholder="Mesajınızı yazın...">
-                    <button type="submit" class="bg-blue-600 px-6 py-3 rounded-xl font-bold">GÖNDER</button>
-                </div>
+                <input id="msg-input" class="w-full p-3 bg-zinc-800 rounded-xl outline-none border border-zinc-700" placeholder="Mesaj yazın...">
             </form>
         </div>
     </div>
 
     <script>
-        const SUPABASE_URL = "https://zdixrufuczabxhvsvwsd.supabase.co";
-        const SUPABASE_KEY = "sb_publishable_cQH31e8TGNu-KuWRIr6_xA_r5yA1eV8";
-        
-        // Supabase istemcisini başlat
-        const _supabase = exports.createClient(SUPABASE_URL, SUPABASE_KEY);
+        const { createClient } = supabase;
+        const _supabase = createClient(
+            "https://zdixrufuczabxhvsvwsd.supabase.co", 
+            "sb_publishable_cQH31e8TGNu-KuWRIr6_xA_r5yA1eV8"
+        );
 
-        let currentChannelId = null;
-        let myUsername = "User_" + Math.floor(Math.random() * 999);
+        let activeChannelId = null;
+        let nick = "Anonim_" + Math.floor(Math.random() * 100);
 
-        // KANALLARI ÇEK
         async function loadChannels() {
-            const { data, error } = await _supabase.from('channels').select('*').order('name');
-            if (error) { console.error("Kanal hatası:", error); return; }
-            
+            const { data } = await _supabase.from('channels').select('*');
             const list = document.getElementById('channel-list');
             list.innerHTML = '';
-            data.forEach(ch => {
-                const btn = document.createElement('button');
-                btn.className = "w-full text-left p-3 rounded-lg hover:bg-zinc-800 transition mb-1 text-zinc-400";
-                btn.innerText = "# " + ch.name;
-                btn.onclick = () => selectChannel(ch);
-                list.appendChild(btn);
+            data?.forEach(ch => {
+                const b = document.createElement('button');
+                b.className = "w-full text-left p-2 rounded hover:bg-zinc-800 text-zinc-400";
+                b.innerText = "# " + ch.name;
+                b.onclick = () => selectChannel(ch);
+                list.appendChild(b);
             });
         }
 
-        // KANAL SEÇ VE MESAJLARI DİNLE
-        async function selectChannel(channel) {
-            currentChannelId = channel.id;
-            document.getElementById('chat-header').innerText = "# " + channel.name;
+        async function selectChannel(ch) {
+            activeChannelId = ch.id;
+            document.getElementById('chat-header').innerText = "# " + ch.name;
             document.getElementById('chat-form').classList.remove('hidden');
             
-            // Mesajları getir
-            const { data } = await _supabase.from('messages').select('*').eq('channel_id', channel.id).order('created_at');
-            const container = document.getElementById('message-container');
-            container.innerHTML = '';
-            data?.forEach(msg => appendMessage(msg));
+            // Mesajları çek
+            const { data } = await _supabase.from('messages').select('*').eq('channel_id', ch.id).order('created_at');
+            const box = document.getElementById('messages');
+            box.innerHTML = '';
+            data?.forEach(m => addMsg(m));
 
-            // REALTIME DINLEME
-            _supabase.channel(`chan-${channel.id}`)
-                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `channel_id=eq.${channel.id}` }, 
-                payload => appendMessage(payload.new))
-                .subscribe();
+            // Canlı dinle
+            _supabase.channel('room-' + ch.id).on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: 'channel_id=eq.' + ch.id }, p => addMsg(p.new)).subscribe();
         }
 
-        function appendMessage(msg) {
-            const container = document.getElementById('message-container');
-            const div = document.createElement('div');
-            div.className = "bg-zinc-800 p-3 rounded-xl w-fit max-w-xs";
-            div.innerHTML = `<span class="text-[10px] text-blue-400 block">${msg.username || 'Anonim'}</span><span class="text-sm">${msg.content}</span>`;
-            container.appendChild(div);
-            container.scrollTop = container.scrollHeight;
+        function addMsg(m) {
+            const box = document.getElementById('messages');
+            const d = document.createElement('div');
+            d.className = "bg-zinc-800 p-2 rounded-lg w-fit";
+            d.innerHTML = `<span class="text-[10px] text-blue-400 block">${m.username}</span>${m.content}`;
+            box.appendChild(d);
+            box.scrollTop = box.scrollHeight;
         }
 
-        // MESAJ GÖNDER
+        async function createChannel() {
+            const input = document.getElementById('new-channel-name');
+            if(!input.value) return;
+            const { error } = await _supabase.from('channels').insert([{ name: input.value }]);
+            if(error) alert("SQL İzni Yok: " + error.message);
+            input.value = '';
+            loadChannels();
+        }
+
         document.getElementById('chat-form').onsubmit = async (e) => {
             e.preventDefault();
-            const input = document.getElementById('message-input');
-            if (!input.value) return;
-
-            const { error } = await _supabase.from('messages').insert([
-                { content: input.value, channel_id: currentChannelId, username: myUsername }
-            ]);
-            if (error) alert("Mesaj gönderilemedi: " + error.message);
-            input.value = '';
-        }
-
-        // KANAL OLUŞTUR
-        async function createChannel() {
-            const input = document.getElementById('new-channel-input');
-            const name = input.value.trim();
-            if (!name) return;
-
-            const { error } = await _supabase.from('channels').insert([{ name: name }]);
-            if (error) {
-                alert("Hata: Supabase SQL yetkilerini kontrol et! \n" + error.message);
-            } else {
-                input.value = '';
-                loadChannels(); // Listeyi güncelle
-            }
+            const i = document.getElementById('msg-input');
+            await _supabase.from('messages').insert([{ content: i.value, channel_id: activeChannelId, username: nick }]);
+            i.value = '';
         }
 
         loadChannels();
