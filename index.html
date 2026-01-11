@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pro Chat V5 - Modüler</title>
+    <title>Pro Chat V5 - Final</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="style.css">
@@ -29,7 +29,7 @@
         <div class="w-64 bg-zinc-900 border-r border-zinc-800 flex flex-col">
             <div class="p-6 font-bold text-xl text-blue-500 border-b border-zinc-800 flex justify-between items-center italic">
                 <span>PRO CHAT</span>
-                <button id="admin-btn" onclick="toggleAdminPanel()" class="hidden bg-amber-600 text-[9px] p-1 rounded font-black text-white uppercase">Admin</button>
+                <button id="admin-btn" onclick="toggleAdminPanel()" class="hidden bg-amber-600 text-[9px] p-1 rounded font-black text-white uppercase shadow-lg">Admin</button>
             </div>
             <div id="channel-list" class="flex-1 p-3 space-y-1 overflow-y-auto"></div>
             <div class="p-4 border-t border-zinc-800 bg-zinc-900/50">
@@ -45,7 +45,7 @@
                 <div class="flex gap-2">
                     <button onclick="toggleMic()" id="mic-btn" class="p-2 bg-zinc-800 rounded-full border border-zinc-700">🎙️</button>
                     <button onclick="toggleCam()" id="cam-btn" class="p-2 bg-zinc-800 rounded-full border border-zinc-700">📷</button>
-                    <button onclick="endCall()" class="px-6 bg-red-600 rounded-full font-bold text-xs uppercase">Aramayı Kapat</button>
+                    <button onclick="endCall()" class="px-6 bg-red-600 rounded-full font-bold text-xs uppercase">Kapat</button>
                 </div>
             </div>
 
@@ -66,7 +66,7 @@
 
             <div id="admin-panel" class="absolute right-0 top-0 h-full w-80 bg-zinc-900 border-l border-zinc-700 shadow-2xl transform translate-x-full transition-transform z-50 p-6 overflow-y-auto">
                 <div class="flex justify-between items-center mb-6 border-b border-zinc-800 pb-4">
-                    <h2 class="text-xl font-black text-amber-500 italic uppercase">Tüm Gruplar</h2>
+                    <h2 class="text-xl font-black text-amber-500 italic uppercase">Admin Yönetimi</h2>
                     <button onclick="toggleAdminPanel()" class="text-zinc-500 font-bold text-xl">×</button>
                 </div>
                 <div id="all-channels-list" class="space-y-3"></div>
