@@ -1,0 +1,177 @@
+const { createClient } = supabase;
+const _supabase = createClient("https://zdixrufuczabxhvsvwsd.supabase.co", "sb_publishable_cQH31e8TGNu-KuWRIr6_xA_r5yA1eV8");
+
+let currentUser = null;
+let activeChannelId = null;
+let localStream = null;
+let isMicOn = true;
+let isCamOn = true;
+
+const ringtone = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
+ringtone.loop = true;
+
+const inviteId = new URLSearchParams(window.location.search).get('invite');
+if (inviteId) document.getElementById('invite-alert').classList.remove('hidden');
+
+// --- AUTH İŞLEMLERİ ---
+async function handleAuth(type) {
+    const email = document.getElementById('auth-email').value.trim();
+    const password = document.getElementById('auth-password').value;
+    if (!email || !password) return alert("Bilgileri girin!");
+
+    const { data, error } = type === 'login' 
+        ? await _supabase.auth.signInWithPassword({ email, password })
+        : await _supabase.auth.signUp({ email, password });
+
+    if (error) alert("Hata: " + error.message);
+    else checkUser();
+}
+
+async function checkUser() {
+    const { data: { session } } = await _supabase.auth.getSession();
+    if (session) {
+        currentUser = session.user;
+        document.getElementById('auth-screen').classList.add('hidden');
+        document.getElementById('chat-screen').classList.remove('hidden');
+        
+        if (inviteId) {
+            await _supabase.from('channel_members').upsert([{ channel_id: inviteId, user_id: currentUser.id }]);
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+
+        if (currentUser.email === 'test@test.com') {
+            document.getElementById('admin-btn').classList.remove('hidden');
+        }
+        loadChannels();
+    }
+}
+
+// --- KANAL YÖNETİMİ ---
+async function loadChannels() {
+    const { data } = await _supabase.from('channels').select('*');
+    const list = document.getElementById('channel-list');
+    list.innerHTML = '';
+    data?.forEach(ch => {
+        const b = document.createElement('button');
+        b.className = "w-full text-left p-3 rounded-xl hover:bg-zinc-800 text-zinc-500 hover:text-white transition text-xs mb-1 border border-transparent hover:border-zinc-700";
+        b.innerText = "# " + ch.name;
+        b.onclick = () => selectChannel(ch);
+        list.appendChild(b);
+    });
+}
+
+async function createChannel() {
+    const name = document.getElementById('new-channel-name').value.trim();
+    if (!name) return;
+    const { data, error } = await _supabase.from('channels').insert([{ name: name, creator_id: currentUser.id }]).select();
+    if (data) {
+        await _supabase.from('channel_members').insert([{ channel_id: data[0].id, user_id: currentUser.id }]);
+        document.getElementById('new-channel-name').value = '';
+        loadChannels();
+    }
+}
+
+async function selectChannel(ch) {
+    activeChannelId = ch.id;
+    document.getElementById('header-text').innerText = "# " + ch.name;
+    document.getElementById('invite-btn').classList.remove('hidden');
+    document.getElementById('call-btn').classList.remove('hidden');
+    document.getElementById('chat-form').classList.remove('hidden');
+    
+    const { data } = await _supabase.from('messages').select('*').eq('channel_id', ch.id).order('created_at');
+    const box = document.getElementById('messages');
+    box.innerHTML = '';
+    data?.forEach(m => addMsg(m));
+    box.scrollTop = box.scrollHeight;
+
+    _supabase.channel(`room-${ch.id}`).on('postgres_changes', { 
+        event: 'INSERT', schema: 'public', table: 'messages', filter: 'channel_id=eq.' + ch.id 
+    }, p => addMsg(p.new)).subscribe();
+}
+
+// --- MESAJLAŞMA ---
+function addMsg(m) {
+    const box = document.getElementById('messages');
+    const isMe = m.user_id === currentUser.id;
+    const d = document.createElement('div');
+    d.className = `p-4 rounded-3xl w-fit max-w-sm border shadow-lg ${isMe ? 'bg-blue-600 border-blue-400 ml-auto rounded-tr-none' : 'bg-zinc-900 border-zinc-800 rounded-tl-none'}`;
+    d.innerHTML = `<span class="text-[9px] font-black block mb-1 opacity-70 uppercase tracking-tighter">${m.username}</span><span class="text-sm font-medium">${m.content}</span>`;
+    box.appendChild(d);
+    box.scrollTop = box.scrollHeight;
+}
+
+document.getElementById('chat-form').onsubmit = async (e) => {
+    e.preventDefault();
+    const i = document.getElementById('msg-input');
+    if (!i.value.trim()) return;
+    await _supabase.from('messages').insert([{ 
+        content: i.value, channel_id: activeChannelId, 
+        username: currentUser.email.split('@')[0], user_id: currentUser.id 
+            }]);
+    i.value = '';
+}
+
+// --- VIDEO ARAMA ---
+async function startCall() {
+    try {
+        ringtone.play();
+        localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        document.getElementById('video-panel').classList.remove('hidden');
+        document.getElementById('localVideo').srcObject = localStream;
+    } catch (err) { alert("İzin verilmedi!"); ringtone.pause(); }
+}
+
+function toggleMic() {
+    isMicOn = !isMicOn;
+    localStream.getAudioTracks()[0].enabled = isMicOn;
+    document.getElementById('mic-btn').innerText = isMicOn ? "🎙️" : "🔇";
+}
+
+function toggleCam() {
+    isCamOn = !isCamOn;
+    localStream.getVideoTracks()[0].enabled = isCamOn;
+    document.getElementById('cam-btn').innerText = isCamOn ? "📷" : "🚫";
+}
+
+function endCall() {
+    ringtone.pause();
+    localStream?.getTracks().forEach(t => t.stop());
+    document.getElementById('video-panel').classList.add('hidden');
+}
+
+// --- YÖNETİM & DİĞER ---
+function toggleAdminPanel() {
+    const panel = document.getElementById('admin-panel');
+    panel.classList.toggle('translate-x-full');
+    if (!panel.classList.contains('translate-x-full')) loadAdminChannels();
+}
+
+async function loadAdminChannels() {
+    const { data } = await _supabase.from('channels').select('*');
+    const list = document.getElementById('all-channels-list');
+    list.innerHTML = '';
+    data?.forEach(ch => {
+        const div = document.createElement('div');
+        div.className = "bg-zinc-800 p-4 rounded-2xl flex justify-between items-center border border-zinc-700 shadow-lg";
+        div.innerHTML = `<span class="text-xs font-bold text-zinc-300"># ${ch.name}</span><button onclick="deleteChannel('${ch.id}')" class="text-[10px] bg-red-600 px-3 py-1 rounded-xl font-black hover:bg-red-500">SİL</button>`;
+        list.appendChild(div);
+    });
+}
+
+async function deleteChannel(id) {
+    if (confirm("Kanalı silmek istediğine emin misin?")) {
+        await _supabase.from('channels').delete().eq('id', id);
+        loadAdminChannels();
+        loadChannels();
+        if(activeChannelId === id) location.reload();
+    }
+}
+
+function copyInviteLink() {
+    const link = `${window.location.origin}${window.location.pathname}?invite=${activeChannelId}`;
+    navigator.clipboard.writeText(link).then(() => alert("Davet linki kopyalandı!"));
+}
+
+async function logout() { await _supabase.auth.signOut(); location.reload(); }
+
+checkUser();
