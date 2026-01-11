@@ -3,20 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pro Chat - Stabil Sürüm</title>
+    <title>Pro Chat V3 - Final Ultra</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .mirror { transform: scaleX(-1); }
         #messages::-webkit-scrollbar { width: 4px; }
         #messages::-webkit-scrollbar-thumb { background: #3b82f6; border-radius: 10px; }
+        .admin-glow { box-shadow: 0 0 15px rgba(245, 158, 11, 0.3); }
     </style>
 </head>
 <body class="bg-zinc-950 text-white h-screen overflow-hidden font-sans">
 
     <div id="auth-screen" class="flex items-center justify-center h-full">
         <div class="bg-zinc-900 p-8 rounded-3xl shadow-2xl w-full max-w-md border border-zinc-800 text-center">
-            <h1 class="text-3xl font-black mb-6 text-blue-500 italic uppercase">PRO CHAT</h1>
+            <h1 class="text-3xl font-black mb-6 text-blue-500 italic uppercase tracking-tighter">PRO CHAT</h1>
             <div id="invite-alert" class="hidden bg-blue-900/30 text-blue-400 p-3 rounded-xl mb-4 text-[10px] font-bold border border-blue-800 italic uppercase">
                 ⚠️ Davet linki algılandı! Giriş yapınca kanala ekleneceksin.
             </div>
@@ -33,35 +34,48 @@
         <div class="w-64 bg-zinc-900 border-r border-zinc-800 flex flex-col">
             <div class="p-6 font-bold text-xl text-blue-500 border-b border-zinc-800 flex justify-between items-center tracking-tighter italic">
                 <span>PRO CHAT</span>
-                <button id="admin-btn" onclick="toggleAdminPanel()" class="hidden bg-amber-600 text-[9px] p-1 rounded font-black text-white">ADMİN</button>
+                <button id="admin-btn" onclick="toggleAdminPanel()" class="hidden bg-amber-600 text-[9px] p-1 rounded font-black text-white hover:bg-amber-500 transition">ADMİN</button>
             </div>
-            <div id="channel-list" class="flex-1 p-3 space-y-1 overflow-y-auto">
-                <p class="text-zinc-600 text-[10px] text-center mt-4">Kanallar yükleniyor...</p>
-            </div>
+            <div id="channel-list" class="flex-1 p-3 space-y-1 overflow-y-auto"></div>
             <div class="p-4 border-t border-zinc-800 bg-zinc-900/50">
-                <input id="new-channel-name" class="w-full p-3 bg-zinc-800 rounded-xl mb-2 text-sm outline-none border border-zinc-700 focus:border-blue-500" placeholder="Özel kanal adı...">
-                <button onclick="createChannel()" class="w-full bg-blue-600 p-2 rounded-xl text-sm font-bold hover:bg-blue-500">KANAL OLUŞTUR</button>
+                <input id="new-channel-name" class="w-full p-3 bg-zinc-800 rounded-xl mb-2 text-sm outline-none border border-zinc-700 focus:border-blue-500" placeholder="Yeni kanal adı...">
+                <button onclick="createChannel()" class="w-full bg-blue-600 p-2 rounded-xl text-sm font-bold hover:bg-blue-500 transition uppercase">Kanal Oluştur</button>
             </div>
             <button onclick="logout()" class="p-4 text-xs text-zinc-600 hover:text-red-500 text-left border-t border-zinc-800 font-bold">Çıkış Yap</button>
         </div>
 
         <div class="flex-1 flex flex-col relative">
-            <div id="chat-header" class="h-16 flex items-center justify-between px-6 border-b border-zinc-800 font-bold text-zinc-400">
-                <span id="header-text"># Kanal Seçin</span>
-                <button id="invite-btn" onclick="copyInviteLink()" class="hidden text-[10px] bg-zinc-800 p-2 rounded-xl border border-zinc-700 hover:bg-zinc-700 transition">DAVET LİNKİ 🔗</button>
+            
+            <div id="video-panel" class="hidden bg-zinc-900 border-b border-zinc-800 p-4 flex flex-col items-center gap-4">
+                <video id="localVideo" autoplay muted playsinline class="w-64 h-48 bg-black rounded-2xl mirror border-2 border-blue-500 shadow-lg"></video>
+                <div class="flex gap-2">
+                    <button onclick="toggleMic()" id="mic-btn" class="p-3 bg-zinc-800 rounded-full">🎙️</button>
+                    <button onclick="toggleCam()" id="cam-btn" class="p-3 bg-zinc-800 rounded-full">📷</button>
+                    <button onclick="endCall()" class="px-6 bg-red-600 rounded-full font-bold text-sm">KAPAT</button>
+                </div>
             </div>
-            <div id="messages" class="flex-1 p-6 overflow-y-auto space-y-4 flex flex-col bg-zinc-950 italic"></div>
+
+            <div class="h-16 flex items-center justify-between px-6 border-b border-zinc-800 bg-zinc-950/80 backdrop-blur">
+                <span id="header-text" class="font-bold text-zinc-400"># Kanal Seçin</span>
+                <div class="flex gap-2">
+                    <button id="call-btn" onclick="startCall()" class="hidden text-[10px] bg-green-600/20 text-green-500 border border-green-500/50 p-2 rounded-xl font-bold hover:bg-green-600 hover:text-white transition">ARAMA</button>
+                    <button id="invite-btn" onclick="copyInviteLink()" class="hidden text-[10px] bg-zinc-800 p-2 rounded-xl border border-zinc-700 hover:bg-zinc-700 transition">DAVET LİNKİ 🔗</button>
+                </div>
+            </div>
+
+            <div id="messages" class="flex-1 p-6 overflow-y-auto space-y-4 flex flex-col bg-zinc-950"></div>
+
             <form id="chat-form" class="p-4 bg-zinc-900 border-t border-zinc-800 hidden flex gap-3">
-                <input id="msg-input" class="flex-1 p-4 bg-zinc-800 rounded-2xl outline-none border border-zinc-700 focus:border-blue-500" placeholder="Mesajınızı yazın...">
-                <button type="submit" class="bg-blue-600 px-8 rounded-2xl font-black hover:bg-blue-500 transition">GÖNDER</button>
+                <input id="msg-input" class="flex-1 p-4 bg-zinc-800 rounded-2xl outline-none border border-zinc-700 focus:border-blue-500 transition" placeholder="Mesajınızı buraya yazın...">
+                <button type="submit" class="bg-blue-600 px-8 rounded-2xl font-black hover:bg-blue-500 transition shadow-lg shadow-blue-900/20">GÖNDER</button>
             </form>
 
-            <div id="admin-panel" class="absolute right-0 top-0 h-full w-80 bg-zinc-900 border-l border-zinc-700 shadow-2xl transform translate-x-full transition-transform z-50 p-6 overflow-y-auto">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-xl font-black text-amber-500 italic uppercase">Admin Yönetimi</h2>
-                    <button onclick="toggleAdminPanel()" class="text-zinc-500 font-bold hover:text-white">X</button>
+            <div id="admin-panel" class="absolute right-0 top-0 h-full w-80 bg-zinc-900 border-l border-zinc-700 shadow-2xl transform translate-x-full transition-transform z-50 p-6 overflow-y-auto admin-glow">
+                <div class="flex justify-between items-center mb-6 border-b border-zinc-800 pb-4">
+                    <h2 class="text-xl font-black text-amber-500 italic uppercase">Yönetim</h2>
+                    <button onclick="toggleAdminPanel()" class="text-zinc-500 font-bold hover:text-white text-xl">×</button>
                 </div>
-                <div id="all-channels-list" class="space-y-3 font-sans"></div>
+                <div id="all-channels-list" class="space-y-3"></div>
             </div>
         </div>
     </div>
@@ -72,15 +86,18 @@
 
         let currentUser = null;
         let activeChannelId = null;
+        let localStream = null;
+        const ringtone = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
+        ringtone.loop = true;
 
-        // Davet linki kontrolü
         const inviteId = new URLSearchParams(window.location.search).get('invite');
         if (inviteId) document.getElementById('invite-alert').classList.remove('hidden');
 
+        // --- AUTH ---
         async function handleAuth(type) {
             const email = document.getElementById('auth-email').value.trim();
             const password = document.getElementById('auth-password').value;
-            if (!email || !password) return alert("Bilgileri girin!");
+            if (!email || !password) return alert("Bilgileri eksiksiz girin!");
 
             const { data, error } = type === 'login' 
                 ? await _supabase.auth.signInWithPassword({ email, password })
@@ -97,7 +114,6 @@
                 document.getElementById('auth-screen').classList.add('hidden');
                 document.getElementById('chat-screen').classList.remove('hidden');
                 
-                // Davet varsa katıl
                 if (inviteId) {
                     await _supabase.from('channel_members').upsert([{ channel_id: inviteId, user_id: currentUser.id }]);
                     window.history.replaceState({}, document.title, window.location.pathname);
@@ -108,18 +124,14 @@
             }
         }
 
+        // --- KANALLAR ---
         async function loadChannels() {
-            const { data, error } = await _supabase.from('channels').select('*');
+            const { data } = await _supabase.from('channels').select('*');
             const list = document.getElementById('channel-list');
             list.innerHTML = '';
-            
-            if (data?.length === 0) {
-                list.innerHTML = '<p class="text-zinc-600 text-[10px] text-center mt-4">Henüz kanalınız yok.</p>';
-            }
-
             data?.forEach(ch => {
                 const b = document.createElement('button');
-                b.className = "w-full text-left p-3 rounded-xl hover:bg-zinc-800 text-zinc-500 hover:text-white transition text-xs mb-1 border border-transparent hover:border-zinc-700";
+                b.className = "w-full text-left p-3 rounded-xl hover:bg-zinc-800 text-zinc-500 hover:text-white transition text-sm mb-1 border border-transparent hover:border-zinc-700";
                 b.innerText = "# " + ch.name;
                 b.onclick = () => selectChannel(ch);
                 list.appendChild(b);
@@ -129,40 +141,38 @@
         async function createChannel() {
             const name = document.getElementById('new-channel-name').value.trim();
             if (!name) return;
-            
             const { data, error } = await _supabase.from('channels').insert([{ name: name, creator_id: currentUser.id }]).select();
-            if (error) return alert("Hata: " + error.message);
-            
             if (data) {
                 await _supabase.from('channel_members').insert([{ channel_id: data[0].id, user_id: currentUser.id }]);
                 document.getElementById('new-channel-name').value = '';
                 loadChannels();
-            }
+            } else if(error) alert(error.message);
         }
 
         async function selectChannel(ch) {
             activeChannelId = ch.id;
             document.getElementById('header-text').innerText = "# " + ch.name;
             document.getElementById('invite-btn').classList.remove('hidden');
+            document.getElementById('call-btn').classList.remove('hidden');
             document.getElementById('chat-form').classList.remove('hidden');
             
             const { data } = await _supabase.from('messages').select('*').eq('channel_id', ch.id).order('created_at');
             const box = document.getElementById('messages');
             box.innerHTML = '';
-            data?.forEach(m => addMsgToScreen(m));
+            data?.forEach(m => addMsg(m));
             box.scrollTop = box.scrollHeight;
 
             _supabase.channel(`room-${ch.id}`).on('postgres_changes', { 
                 event: 'INSERT', schema: 'public', table: 'messages', filter: 'channel_id=eq.' + ch.id 
-            }, p => addMsgToScreen(p.new)).subscribe();
+            }, p => addMsg(p.new)).subscribe();
         }
 
-        function addMsgToScreen(m) {
+        function addMsg(m) {
             const box = document.getElementById('messages');
             const isMe = m.user_id === currentUser.id;
             const d = document.createElement('div');
-            d.className = `p-4 rounded-3xl w-fit max-w-sm border shadow-xl ${isMe ? 'bg-blue-600 border-blue-500 ml-auto rounded-tr-none' : 'bg-zinc-900 border-zinc-800 rounded-tl-none'}`;
-            d.innerHTML = `<span class="text-[9px] font-black block mb-1 opacity-70 uppercase tracking-tighter">${m.username}</span><span class="text-sm font-medium">${m.content}</span>`;
+            d.className = `p-4 rounded-3xl w-fit max-w-sm border shadow-lg ${isMe ? 'bg-blue-600 border-blue-400 ml-auto rounded-tr-none' : 'bg-zinc-900 border-zinc-800 rounded-tl-none'}`;
+            d.innerHTML = `<span class="text-[9px] font-black block mb-1 opacity-70 uppercase">${m.username}</span><span class="text-sm font-medium">${m.content}</span>`;
             box.appendChild(d);
             box.scrollTop = box.scrollHeight;
         }
@@ -170,8 +180,7 @@
         document.getElementById('chat-form').onsubmit = async (e) => {
             e.preventDefault();
             const i = document.getElementById('msg-input');
-            if (!i.value.trim() || !activeChannelId) return;
-
+            if (!i.value.trim()) return;
             await _supabase.from('messages').insert([{ 
                 content: i.value, channel_id: activeChannelId, 
                 username: currentUser.email.split('@')[0], user_id: currentUser.id 
@@ -179,12 +188,7 @@
             i.value = '';
         }
 
-        function copyInviteLink() {
-            const link = `${window.location.origin}${window.location.pathname}?invite=${activeChannelId}`;
-            navigator.clipboard.writeText(link);
-            alert("Davet linki kopyalandı!");
-        }
-
+        // --- ADMİN VE SİLME ---
         function toggleAdminPanel() {
             const panel = document.getElementById('admin-panel');
             panel.classList.toggle('translate-x-full');
@@ -197,18 +201,43 @@
             list.innerHTML = '';
             data?.forEach(ch => {
                 const div = document.createElement('div');
-                div.className = "bg-zinc-800 p-4 rounded-2xl flex justify-between items-center border border-zinc-700 shadow-lg";
-                div.innerHTML = `<span class="text-xs font-bold text-zinc-300"># ${ch.name}</span><button onclick="deleteChannel('${ch.id}')" class="text-[10px] bg-red-600 px-3 py-1 rounded-xl font-black hover:bg-red-500">SİL</button>`;
+                div.className = "bg-zinc-800 p-4 rounded-2xl flex justify-between items-center border border-zinc-700";
+                div.innerHTML = `<span class="text-xs font-bold text-zinc-300"># ${ch.name}</span><button onclick="deleteChannel('${ch.id}')" class="text-[10px] bg-red-600 px-3 py-1 rounded-xl font-black hover:bg-red-500 transition">SİL</button>`;
                 list.appendChild(div);
             });
         }
 
         async function deleteChannel(id) {
-            if (confirm("Kanal silinsin mi?")) {
-                await _supabase.from('channels').delete().eq('id', id);
-                loadAdminChannels();
-                loadChannels();
+            if (confirm("Bu kanalı silmek istediğine emin misin?")) {
+                const { error } = await _supabase.from('channels').delete().eq('id', id);
+                if (error) alert("Hata: " + error.message);
+                else {
+                    loadAdminChannels();
+                    loadChannels();
+                    if(activeChannelId === id) location.reload();
+                }
             }
+        }
+
+        // --- ARİMA ---
+        async function startCall() {
+            try {
+                ringtone.play();
+                localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                document.getElementById('video-panel').classList.remove('hidden');
+                document.getElementById('localVideo').srcObject = localStream;
+            } catch (err) { alert("Kamera izni gerekiyor!"); ringtone.pause(); }
+        }
+
+        function endCall() {
+            ringtone.pause();
+            localStream?.getTracks().forEach(t => t.stop());
+            document.getElementById('video-panel').classList.add('hidden');
+        }
+
+        function copyInviteLink() {
+            const link = `${window.location.origin}${window.location.pathname}?invite=${activeChannelId}`;
+            navigator.clipboard.writeText(link).then(() => alert("Davet linki kopyalandı!"));
         }
 
         async function logout() { await _supabase.auth.signOut(); location.reload(); }
