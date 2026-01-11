@@ -3,94 +3,107 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Pro Chat Mobile - Voice & Video</title>
+    <title>Pro Chat Mobile V13</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        .mirror { transform: scaleX(-1); }
-        video { background: #000; border-radius: 1rem; width: 100%; height: 100%; object-fit: cover; }
-    </style>
+    <style>.mirror { transform: scaleX(-1); } video { background: #000; border-radius: 1rem; }</style>
 </head>
 <body class="bg-zinc-950 text-white h-screen flex flex-col overflow-hidden">
 
     <div id="auth-screen" class="fixed inset-0 z-[100] bg-zinc-950 flex flex-col items-center justify-center p-6 text-center">
-        <h1 class="text-4xl font-black text-indigo-500 mb-8 italic">PRO MOBILE</h1>
-        <input id="email" class="w-full p-4 mb-2 bg-zinc-900 rounded-2xl outline-none" placeholder="E-posta">
-        <input id="pass" type="password" class="w-full p-4 mb-8 bg-zinc-900 rounded-2xl outline-none" placeholder="Şifre">
-        <button onclick="login()" class="w-full bg-indigo-600 py-4 rounded-2xl font-bold">GİRİŞ YAP</button>
+        <h1 class="text-4xl font-black text-indigo-500 mb-8 italic uppercase">MOBILE</h1>
+        <input id="auth-email" class="w-full p-4 mb-3 bg-zinc-900 rounded-2xl outline-none" placeholder="E-posta">
+        <input id="auth-password" type="password" class="w-full p-4 mb-8 bg-zinc-900 rounded-2xl outline-none" placeholder="Şifre">
+        <button onclick="handleAuth('login')" class="w-full bg-indigo-600 py-4 rounded-2xl font-bold mb-4">Giriş Yap</button>
+        <button onclick="handleAuth('signup')" class="w-full text-zinc-500 font-bold uppercase text-xs">Kayıt Ol</button>
     </div>
 
     <header class="h-16 border-b border-zinc-800 flex items-center justify-between px-4">
         <button onclick="drawer.classList.toggle('-translate-x-full')" class="text-2xl">☰</button>
         <span id="title" class="font-bold text-sm"># KANAL SEÇ</span>
-        <button id="call-btn" onclick="startCall()" class="hidden bg-green-600 p-2 rounded-lg text-sm">📞</button>
+        <button id="call-btn" onclick="startCall()" class="hidden bg-green-600 p-2 rounded-lg">📞</button>
     </header>
 
-    <main id="messages" class="flex-1 overflow-y-auto p-4 space-y-3"></main>
+    <main id="messages" class="flex-1 overflow-y-auto p-4 space-y-3 bg-zinc-950"></main>
 
     <form id="chat-form" class="hidden p-3 bg-zinc-900 border-t border-zinc-800 flex gap-2">
         <input id="msg-input" class="flex-1 bg-zinc-800 px-4 py-2 rounded-full outline-none" placeholder="Mesaj...">
         <button class="bg-indigo-600 w-10 h-10 rounded-full">🚀</button>
     </form>
 
-    <div id="drawer" class="fixed inset-y-0 left-0 w-64 bg-zinc-900 z-[150] -translate-x-full transition-transform p-4">
-        <h2 class="font-bold text-indigo-500 mb-4">KANALLAR</h2>
+    <div id="drawer" class="fixed inset-y-0 left-0 w-64 bg-zinc-900 z-[150] -translate-x-full transition-transform p-4 border-r border-zinc-800">
+        <h2 class="font-black text-indigo-500 mb-6 italic">KANALLAR</h2>
         <div id="channel-list" class="space-y-2"></div>
     </div>
 
     <div id="call-panel" class="hidden fixed inset-0 z-[200] bg-black flex flex-col">
         <div class="flex-1 relative">
-            <video id="remoteVideo" autoplay playsinline class="w-full h-full"></video>
-            <video id="localVideo" autoplay muted playsinline class="absolute top-4 right-4 w-32 h-48 mirror border-2 border-indigo-500 rounded-xl"></video>
+            <video id="remoteVideo" autoplay playsinline class="w-full h-full object-cover"></video>
+            <video id="localVideo" autoplay muted playsinline class="absolute top-4 right-4 w-28 h-40 mirror border-2 border-indigo-500 shadow-2xl rounded-2xl"></video>
         </div>
-        <div class="p-8 bg-zinc-900 flex justify-center">
-            <button onclick="endCall()" class="w-20 h-20 bg-red-600 rounded-full text-2xl">📞</button>
+        <div class="p-8 bg-zinc-900 rounded-t-[40px] flex justify-center">
+            <button onclick="endCall()" class="w-20 h-20 bg-red-600 rounded-full text-2xl shadow-xl active:scale-90">📞</button>
         </div>
     </div>
 
     <script>
-        const { createClient } = supabase;
-        const _supabase = createClient("https://zdixrufuczabxhvsvwsd.supabase.co", "sb_publishable_cQH31e8TGNu-KuWRIr6_xA_r5yA1eV8");
-        let user, activeCh, pc, localStream;
+        let _supabase, user, activeCh, pc, localStream;
 
-        async function login() {
-            const { error } = await _supabase.auth.signInWithPassword({ email: email.value, password: pass.value });
-            if (error) alert(error.message); else location.reload();
+        window.onload = () => {
+            _supabase = supabase.createClient("https://zdixrufuczabxhvsvwsd.supabase.co", "sb_publishable_cQH31e8TGNu-KuWRIr6_xA_r5yA1eV8");
+            checkUser();
+        };
+
+        async function handleAuth(type) {
+            const email = document.getElementById('auth-email').value;
+            const password = document.getElementById('auth-password').value;
+            const { error } = type === 'login' 
+                ? await _supabase.auth.signInWithPassword({ email, password })
+                : await _supabase.auth.signUp({ email, password });
+            if (error) alert(error.message); else checkUser();
         }
 
-        async function check() {
+        async function checkUser() {
             const { data: { session } } = await _supabase.auth.getSession();
-            if (session) { user = session.user; auth_screen.classList.add('hidden'); loadChannels(); }
+            if (session) {
+                user = session.user;
+                document.getElementById('auth-screen').classList.add('hidden');
+                loadChannels();
+            }
         }
 
         async function loadChannels() {
             const { data } = await _supabase.from('channels').select('*');
-            data.forEach(ch => {
+            const list = document.getElementById('channel-list');
+            list.innerHTML = '';
+            data?.forEach(ch => {
                 const b = document.createElement('button');
-                b.className = "w-full text-left p-4 bg-zinc-800 rounded-xl font-bold";
+                b.className = "w-full text-left p-4 bg-zinc-800 rounded-2xl font-bold uppercase text-xs";
                 b.innerText = "# " + ch.name;
                 b.onclick = () => { activeCh = ch.id; title.innerText = ch.name; call_btn.classList.remove('hidden'); chat_form.classList.remove('hidden'); drawer.classList.add('-translate-x-full'); loadMessages(); setupSignaling(); };
-                document.getElementById('channel-list').appendChild(b);
+                list.appendChild(b);
             });
+        }
+
+        function addMsg(m) {
+            const box = document.getElementById('messages');
+            const d = document.createElement('div');
+            d.className = `p-3 rounded-2xl max-w-[85%] ${m.user_id === user.id ? 'bg-indigo-600 ml-auto' : 'bg-zinc-800'}`;
+            d.innerHTML = `<p class="text-[8px] opacity-40 font-black uppercase">${m.username}</p><p class="text-sm">${m.content}</p>`;
+            box.appendChild(d); box.scrollTop = box.scrollHeight;
         }
 
         async function loadMessages() {
             const { data } = await _supabase.from('messages').select('*').eq('channel_id', activeCh).order('created_at');
-            messages.innerHTML = ''; data.forEach(addMsg);
+            const box = document.getElementById('messages'); box.innerHTML = '';
+            data?.forEach(addMsg); box.scrollTop = box.scrollHeight;
         }
 
-        function addMsg(m) {
-            const d = document.createElement('div');
-            d.className = `p-3 rounded-2xl max-w-[80%] ${m.user_id === user.id ? 'bg-indigo-600 ml-auto' : 'bg-zinc-800'}`;
-            d.innerHTML = `<p class="text-[8px] opacity-50 uppercase">${m.username}</p><p class="text-sm">${m.content}</p>`;
-            messages.appendChild(d); messages.scrollTop = messages.scrollHeight;
-        }
-
-        // --- MOBILE WEBRTC ---
+        // --- MOBILE ARAMA ---
         async function startCall() {
-            call_panel.classList.remove('hidden');
+            document.getElementById('call-panel').classList.remove('hidden');
             localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-            localVideo.srcObject = localStream;
+            document.getElementById('localVideo').srcObject = localStream;
             initWebRTC();
             const offer = await pc.createOffer();
             await pc.setLocalDescription(offer);
@@ -100,15 +113,15 @@
         function initWebRTC() {
             pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
             localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
-            pc.ontrack = e => remoteVideo.srcObject = e.streams[0];
+            pc.ontrack = e => document.getElementById('remoteVideo').srcObject = e.streams[0];
             pc.onicecandidate = e => { if(e.candidate) sendSignal({ type: 'candidate', candidate: e.candidate }); };
         }
 
         function setupSignaling() {
-            _supabase.channel(`call-${activeCh}`).on('broadcast', { event: 'signal' }, async ({ payload }) => {
+            _supabase.channel(`room-${activeCh}`).on('broadcast', { event: 'signal' }, async ({ payload }) => {
                 if (!pc) {
                     localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-                    localVideo.srcObject = localStream;
+                    document.getElementById('localVideo').srcObject = localStream;
                     initWebRTC();
                 }
                 if (payload.type === 'offer') {
@@ -125,11 +138,18 @@
         }
 
         async function sendSignal(payload) {
-            _supabase.channel(`call-${activeCh}`).send({ type: 'broadcast', event: 'signal', payload });
+            _supabase.channel(`room-${activeCh}`).send({ type: 'broadcast', event: 'signal', payload });
         }
 
         function endCall() { localStream?.getTracks().forEach(t => t.stop()); location.reload(); }
-        check();
+
+        document.getElementById('chat-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const input = document.getElementById('msg-input');
+            if(!input.value.trim()) return;
+            await _supabase.from('messages').insert([{ content: input.value, channel_id: activeCh, username: user.email.split('@')[0], user_id: user.id }]);
+            input.value = '';
+        }
     </script>
 </body>
 </html>
